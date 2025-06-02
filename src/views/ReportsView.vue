@@ -89,7 +89,7 @@
                 </select>
               </div>
             </div>
-        
+            
             <!-- زر تطبيق الفلتر -->
             <div class="flex justify-center mb-8">
               <button
@@ -133,7 +133,7 @@
                 </tbody>
               </table>
             </div>
-        
+            
             <!-- ملخص التقرير -->
             <div class="mt-8 p-4 bg-sky-50 rounded-lg">
               <h2 class="text-xl font-bold text-sky-700 mb-4 text-center">ملخص التقرير</h2>
