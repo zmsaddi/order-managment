@@ -256,7 +256,7 @@ export const authService = {
 
     // إنشاء المستخدم المدير الافتراضي
     const { data, error } = await supabase.auth.admin.createUser({
-      email: 'zmsaddi@gmail.com',
+      email: 'msaddizakariya@gmail.com',
       password: 'Spain@2025',
       email_confirm: true
     })
@@ -269,7 +269,7 @@ export const authService = {
       .insert([
         {
           id: data.user.id,
-          email: 'zmsaddi@gmail.com',
+          email: 'msaddizakariya@gmail.com',
           name: 'مدير النظام',
           role: 'admin',
           status: 'active'
