@@ -48,120 +48,122 @@
           <div class="bg-white rounded-lg shadow-md p-6">
             <h1 class="text-2xl font-bold text-sky-700 mb-6 text-center">تقارير المبيعات</h1>
             
-        <!-- فلاتر التقارير -->
-        <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-from">
-              من تاريخ
-            </label>
-            <input
-              type="date"
-              id="date-from"
-              v-model="filters.dateFrom"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-to">
-              إلى تاريخ
-            </label>
-            <input
-              type="date"
-              id="date-to"
-              v-model="filters.dateTo"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="status">
-              حالة الطلب
-            </label>
-            <select
-              id="status"
-              v-model="filters.status"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
-            >
-              <option value="">جميع الحالات</option>
-              <option value="new">جديد</option>
-              <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
-              <option value="delivered">تم التسليم</option>
-              <option value="cancelled">ملغى</option>
-            </select>
-          </div>
-        </div>
-        
-        <!-- زر تطبيق الفلتر -->
-        <div class="flex justify-center mb-8">
-          <button
-            @click="applyFilters"
-            class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-          >
-            تطبيق الفلتر
-          </button>
-        </div>
-        
-        <!-- جدول التقارير -->
-        <div class="overflow-x-auto">
-          <table class="min-w-full bg-white">
-            <thead>
-              <tr>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">رقم الطلب</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">اسم العميل</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">تاريخ الطلب</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">المبلغ الإجمالي</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">حالة الطلب</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="loading" class="text-center">
-                <td colspan="5" class="py-4">جاري تحميل البيانات...</td>
-              </tr>
-              <tr v-else-if="orders.length === 0" class="text-center">
-                <td colspan="5" class="py-4">لا توجد بيانات متاحة</td>
-              </tr>
-              <template v-else>
-                <tr v-for="order in orders" :key="order.id" class="border-b hover:bg-gray-50">
-                  <td class="py-3 px-4 text-center">{{ order.id }}</td>
-                  <td class="py-3 px-4 text-center">{{ order.customer_name }}</td>
-                  <td class="py-3 px-4 text-center">{{ formatDate(order.created_at) }}</td>
-                  <td class="py-3 px-4 text-center">{{ formatCurrency(order.total) }}</td>
-                  <td class="py-3 px-4 text-center">
-                    <span :class="getStatusClass(order.status)">{{ getStatusText(order.status) }}</span>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- ملخص التقرير -->
-        <div class="mt-8 p-4 bg-sky-50 rounded-lg">
-          <h2 class="text-xl font-bold text-sky-700 mb-4 text-center">ملخص التقرير</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <p class="text-gray-600 mb-2">إجمالي عدد الطلبات</p>
-              <p class="text-2xl font-bold text-sky-700">{{ summary.totalOrders }}</p>
+            <!-- فلاتر التقارير -->
+            <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-from">
+                  من تاريخ
+                </label>
+                <input
+                  type="date"
+                  id="date-from"
+                  v-model="filters.dateFrom"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                />
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-to">
+                  إلى تاريخ
+                </label>
+                <input
+                  type="date"
+                  id="date-to"
+                  v-model="filters.dateTo"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                />
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="status">
+                  حالة الطلب
+                </label>
+                <select
+                  id="status"
+                  v-model="filters.status"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                >
+                  <option value="">جميع الحالات</option>
+                  <option value="new">جديد</option>
+                  <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
+                  <option value="delivered">تم التسليم</option>
+                  <option value="cancelled">ملغى</option>
+                </select>
+              </div>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <p class="text-gray-600 mb-2">إجمالي المبيعات</p>
-              <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.totalSales) }}</p>
+        
+            <!-- زر تطبيق الفلتر -->
+            <div class="flex justify-center mb-8">
+              <button
+                @click="applyFilters"
+                class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              >
+                تطبيق الفلتر
+              </button>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <p class="text-gray-600 mb-2">متوسط قيمة الطلب</p>
-              <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.averageOrderValue) }}</p>
+            
+            <!-- جدول التقارير -->
+            <div class="overflow-x-auto">
+              <table class="min-w-full bg-white">
+                <thead>
+                  <tr>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">رقم الطلب</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">اسم العميل</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">تاريخ الطلب</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">المبلغ الإجمالي</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">حالة الطلب</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="loading" class="text-center">
+                    <td colspan="5" class="py-4">جاري تحميل البيانات...</td>
+                  </tr>
+                  <tr v-else-if="orders.length === 0" class="text-center">
+                    <td colspan="5" class="py-4">لا توجد بيانات متاحة</td>
+                  </tr>
+                  <template v-else>
+                    <tr v-for="order in orders" :key="order.id" class="border-b hover:bg-gray-50">
+                      <td class="py-3 px-4 text-center">{{ order.id }}</td>
+                      <td class="py-3 px-4 text-center">{{ order.customer_name }}</td>
+                      <td class="py-3 px-4 text-center">{{ formatDate(order.created_at) }}</td>
+                      <td class="py-3 px-4 text-center">{{ formatCurrency(order.total) }}</td>
+                      <td class="py-3 px-4 text-center">
+                        <span :class="getStatusClass(order.status)">{{ getStatusText(order.status) }}</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+        
+            <!-- ملخص التقرير -->
+            <div class="mt-8 p-4 bg-sky-50 rounded-lg">
+              <h2 class="text-xl font-bold text-sky-700 mb-4 text-center">ملخص التقرير</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                  <p class="text-gray-600 mb-2">إجمالي عدد الطلبات</p>
+                  <p class="text-2xl font-bold text-sky-700">{{ summary.totalOrders }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                  <p class="text-gray-600 mb-2">إجمالي المبيعات</p>
+                  <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.totalSales) }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                  <p class="text-gray-600 mb-2">متوسط قيمة الطلب</p>
+                  <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.averageOrderValue) }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- زر طباعة التقرير -->
+            <div class="flex justify-center mt-8">
+              <button
+                @click="printReport"
+                class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              >
+                طباعة التقرير
+              </button>
             </div>
           </div>
-        </div>
-        
-        <!-- زر طباعة التقرير -->
-        <div class="flex justify-center mt-8">
-          <button
-            @click="printReport"
-            class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-          >
-            طباعة التقرير
-          </button>
-        </div>
+        </main>
       </div>
     </div>
   </div>
