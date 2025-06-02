@@ -75,7 +75,7 @@ export const authService = {
     if (error) throw error
   },
 
-  // إنشاء مستخدم جديد
+  // إنشاء مستخدم جديد - تم تعديله للتفعيل المباشر دون تأكيد البريد الإلكتروني
   async createUser(email, password, userData) {
     // التحقق من صلاحيات المستخدم الحالي
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
@@ -83,43 +83,58 @@ export const authService = {
       throw new Error('ليس لديك صلاحية لإنشاء مستخدمين جدد')
     }
 
-    // إنشاء المستخدم في نظام المصادقة باستخدام signUp بدلاً من admin.createUser
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: 'https://order-managment-7h2p.vercel.app/login',
-        data: {
-          email_confirmed: true
+    try {
+      // إنشاء المستخدم في نظام المصادقة
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role
+          }
         }
+      })
+
+      if (error) throw error
+
+      // تفعيل المستخدم مباشرة في قاعدة البيانات
+      // هذا يتطلب إعداد قاعدة بيانات Supabase للسماح بتحديث حالة المستخدم
+      const { error: updateError } = await supabase.rpc('confirm_user', {
+        user_id: data.user.id
+      })
+
+      if (updateError) {
+        console.error('فشل تفعيل المستخدم تلقائياً:', updateError)
       }
-    })
 
-    if (error) throw error
+      // إنشاء سجل المستخدم في جدول المستخدمين
+      const { data: newUser, error: userError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: data.user.id,
+            email: email,
+            name: userData.name,
+            role: userData.role,
+            phone: userData.phone,
+            address: userData.address,
+            status: userData.status
+          }
+        ])
+        .select()
+        .single()
 
-    // إنشاء سجل المستخدم في جدول المستخدمين
-    const { data: newUser, error: userError } = await supabase
-      .from('users')
-      .insert([
-        {
-          id: data.user.id,
-          email: email,
-          name: userData.name,
-          role: userData.role,
-          phone: userData.phone,
-          address: userData.address,
-          status: userData.status
-        }
-      ])
-      .select()
-      .single()
+      if (userError) {
+        throw userError
+      }
 
-    if (userError) {
-      throw userError
-    }
-
-    return {
-      user: newUser
+      return {
+        user: newUser
+      }
+    } catch (error) {
+      console.error('خطأ في إنشاء المستخدم:', error)
+      throw error
     }
   },
 
@@ -197,7 +212,7 @@ export const authService = {
   async resetPassword(email) {
     // إرسال رابط إعادة تعيين كلمة المرور
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://order-managment-7h2p.vercel.app/login'
+      redirectTo: 'https://order-managment-7h2p.vercel.app/reset-password'
     })
 
     if (error) throw error
@@ -257,19 +272,28 @@ export const authService = {
       return { success: false, message: 'يوجد مستخدمين بالفعل في النظام' }
     }
 
-    // إنشاء المستخدم المدير الافتراضي باستخدام signUp
+    // إنشاء المستخدم المدير الافتراضي
     const { data, error } = await supabase.auth.signUp({
       email: 'msaddizakariya@gmail.com',
       password: 'Spain@2025',
       options: {
-        emailRedirectTo: 'https://order-managment-7h2p.vercel.app/login',
         data: {
-          email_confirmed: true
+          name: 'مدير النظام',
+          role: 'admin'
         }
       }
     })
 
     if (error) throw error
+
+    // تفعيل المستخدم مباشرة في قاعدة البيانات
+    const { error: updateError } = await supabase.rpc('confirm_user', {
+      user_id: data.user.id
+    })
+
+    if (updateError) {
+      console.error('فشل تفعيل المستخدم المدير تلقائياً:', updateError)
+    }
 
     // إنشاء سجل المستخدم في جدول المستخدمين
     const { data: newUser, error: userError } = await supabase
