@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'1
+import { createClient } from '@supabase/supabase-js'
 
 // إنشاء عميل Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
