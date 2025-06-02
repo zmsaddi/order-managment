@@ -75,7 +75,7 @@ export const authService = {
     if (error) throw error
   },
 
-  // إنشاء مستخدم جديد - تم تعديله للتفعيل المباشر دون تأكيد البريد الإلكتروني
+  // إنشاء مستخدم جديد - تم تعديله للاعتماد على التريجر التلقائي في قاعدة البيانات
   async createUser(email, password, userData) {
     // التحقق من صلاحيات المستخدم الحالي
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
@@ -98,15 +98,7 @@ export const authService = {
 
       if (error) throw error
 
-      // تفعيل المستخدم مباشرة في قاعدة البيانات
-      // هذا يتطلب إعداد قاعدة بيانات Supabase للسماح بتحديث حالة المستخدم
-      const { error: updateError } = await supabase.rpc('confirm_user', {
-        user_id: data.user.id
-      })
-
-      if (updateError) {
-        console.error('فشل تفعيل المستخدم تلقائياً:', updateError)
-      }
+      // لا حاجة لاستدعاء وظيفة تفعيل المستخدم، التريجر في قاعدة البيانات سيقوم بذلك تلقائياً
 
       // إنشاء سجل المستخدم في جدول المستخدمين
       const { data: newUser, error: userError } = await supabase
@@ -286,14 +278,7 @@ export const authService = {
 
     if (error) throw error
 
-    // تفعيل المستخدم مباشرة في قاعدة البيانات
-    const { error: updateError } = await supabase.rpc('confirm_user', {
-      user_id: data.user.id
-    })
-
-    if (updateError) {
-      console.error('فشل تفعيل المستخدم المدير تلقائياً:', updateError)
-    }
+    // لا حاجة لاستدعاء وظيفة تفعيل المستخدم، التريجر في قاعدة البيانات سيقوم بذلك تلقائياً
 
     // إنشاء سجل المستخدم في جدول المستخدمين
     const { data: newUser, error: userError } = await supabase
