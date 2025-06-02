@@ -287,7 +287,7 @@ export default {
       total: 0,
       notes: '',
       status: 'new',
-      sales_rep_id: user.value.id
+      sales_rep_id: user.value?.id || null
     })
     
     // تبديل حالة القائمة الجانبية للجوال
@@ -322,7 +322,7 @@ export default {
         total: 0,
         notes: '',
         status: 'new',
-        sales_rep_id: user.value.id
+        sales_rep_id: user.value?.id || null
       })
     }
     
@@ -331,6 +331,11 @@ export default {
       submitting.value = true
       
       try {
+        // التحقق من وجود معرف المستخدم
+        if (!order.sales_rep_id) {
+          throw new Error('معرف المستخدم غير متوفر. يرجى تسجيل الخروج وإعادة تسجيل الدخول.')
+        }
+        
         // حساب الإجماليات مرة أخرى للتأكد من صحتها
         calculateTotals()
         

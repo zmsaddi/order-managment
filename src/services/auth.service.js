@@ -83,40 +83,82 @@ export const authService = {
       throw new Error('ليس لديك صلاحية لإنشاء مستخدمين جدد')
     }
 
-    // إنشاء المستخدم في نظام المصادقة
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: 'https://order-managment-7h2p.vercel.app/login'
-      }
-    })
+    try {
+      // محاولة استخدام admin.createUser أولاً إذا كان متاحاً (في بيئة الخادم)
+      const { data, error } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true
+      })
 
-    if (error) throw error
+      if (error) {
+        // إذا فشل admin.createUser، نستخدم signUp كبديل
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name: userData.name,
+              role: userData.role,
+              email: email
+            }
+          }
+        })
 
-    // إنشاء سجل المستخدم في جدول المستخدمين
-    const { data: newUser, error: userError } = await supabase
-      .from('users')
-      .insert([
-        {
-          id: data.user.id,
-          email: email,
-          name: userData.name,
-          role: userData.role,
-          phone: userData.phone,
-          address: userData.address,
-          status: userData.status
+        if (signUpError) throw signUpError
+
+        // تفعيل المستخدم يدوياً عبر SQL (يعمل فقط إذا كان هناك trigger في قاعدة البيانات)
+        await supabase.rpc('confirm_user', { user_email: email })
+
+        // إنشاء سجل المستخدم في جدول المستخدمين
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: signUpData.user.id,
+              email: email,
+              name: userData.name,
+              role: userData.role,
+              phone: userData.phone,
+              address: userData.address,
+              status: userData.status
+            }
+          ])
+          .select()
+          .single()
+
+        if (userError) throw userError
+
+        return {
+          user: newUser
         }
-      ])
-      .select()
-      .single()
+      }
 
-    if (userError) {
-      throw userError
-    }
+      // إذا نجح admin.createUser، نستمر بالطريقة العادية
+      const { data: newUser, error: userError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: data.user.id,
+            email: email,
+            name: userData.name,
+            role: userData.role,
+            phone: userData.phone,
+            address: userData.address,
+            status: userData.status
+          }
+        ])
+        .select()
+        .single()
 
-    return {
-      user: newUser
+      if (userError) throw userError
+
+      return {
+        user: newUser
+      }
+    } catch (error) {
+      console.error('خطأ في إنشاء المستخدم:', error)
+      throw error
     }
   },
 
@@ -180,7 +222,8 @@ export const authService = {
     }
 
     // حذف سجل المستخدم من جدول المستخدمين فقط
-    // ملاحظة: لا يتم حذف المستخدم من نظام المصادقة، يجب على المدير حذفه يدوياً من لوحة تحكم Supabase إذا لزم الأمر
+    // ملاحظة: لا يمكننا حذف المستخدم من نظام المصادقة لأننا لا نملك صلاحيات admin
+    // يجب حذف المستخدم يدوياً من لوحة تحكم Supabase إذا لزم الأمر
     const { error } = await supabase
       .from('users')
       .delete()
@@ -188,7 +231,7 @@ export const authService = {
 
     if (error) throw error
 
-    return { success: true }
+    return { success: true, message: 'تم حذف المستخدم من النظام. لحذفه بشكل كامل من نظام المصادقة، يرجى استخدام لوحة تحكم Supabase.' }
   },
 
   // إعادة تعيين كلمة المرور
@@ -199,21 +242,10 @@ export const authService = {
       throw new Error('ليس لديك صلاحية لإعادة تعيين كلمات المرور')
     }
 
-    // جلب بريد المستخدم
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('email')
-      .eq('id', userId)
-      .single()
-
-    if (userError) throw userError
-
-    // إرسال رابط إعادة تعيين كلمة المرور
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      userData.email,
-      {
-        redirectTo: 'https://order-managment-7h2p.vercel.app/login'
-      }
+    // إعادة تعيين كلمة المرور
+    const { error } = await supabase.auth.admin.updateUserById(
+      userId,
+      { password: newPassword }
     )
 
     if (error) throw error
