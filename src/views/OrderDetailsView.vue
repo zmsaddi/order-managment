@@ -190,7 +190,7 @@
                   </div>
                   <div>
                     <span class="text-gray-600">سعر الوحدة:</span>
-                    <p class="font-medium">{{ formatCurrency(order.unit_price) }}</p>
+                    <p class="font-medium">{{ formatCurrency(order.unit_price) }} ر.س</p>
                   </div>
                   <div>
                     <span class="text-gray-600">نسبة الضريبة:</span>
@@ -211,15 +211,15 @@
               <div class="border-t border-gray-200 pt-4">
                 <div class="flex justify-between py-2">
                   <span class="text-gray-600">المجموع الفرعي:</span>
-                  <span class="font-medium">{{ formatCurrency(order.subtotal) }}</span>
+                  <span class="font-medium">{{ formatCurrency(order.subtotal) }} ر.س</span>
                 </div>
                 <div class="flex justify-between py-2">
                   <span class="text-gray-600">قيمة الضريبة ({{ order.tax_rate }}%):</span>
-                  <span class="font-medium">{{ formatCurrency(order.tax_amount) }}</span>
+                  <span class="font-medium">{{ formatCurrency(order.tax_amount) }} ر.س</span>
                 </div>
                 <div class="flex justify-between py-2 border-t border-gray-200 mt-2">
                   <span class="text-gray-800 font-semibold">الإجمالي:</span>
-                  <span class="text-xl font-bold text-sky-700">{{ formatCurrency(order.total) }}</span>
+                  <span class="text-xl font-bold text-sky-700">{{ formatCurrency(order.total) }} ر.س</span>
                 </div>
               </div>
             </div>
@@ -285,7 +285,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import SidebarMenu from '@/components/SidebarMenu.vue'
-import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass } from '@/utils/formatters'
 
 export default {
   name: 'OrderDetailsView',
@@ -300,8 +299,6 @@ export default {
     const order = ref(null)
     const salesRep = ref(null)
     const newStatus = ref('')
-    const showDeleteModal = ref(false)
-    const deleting = ref(false)
     
     // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
@@ -346,19 +343,48 @@ export default {
     
     // الحصول على نص حالة الطلب
     const getStatusText = (status) => {
-      return getOrderStatusText(status)
+      const statusMap = {
+        'new': 'جديد',
+        'completed_pending_delivery': 'مكتمل بانتظار التسليم',
+        'delivered': 'تم التسليم',
+        'cancelled': 'ملغى'
+      }
+      return statusMap[status] || status
     }
     
     // الحصول على فئة CSS لحالة الطلب
     const getStatusClass = (status) => {
-      return getOrderStatusClass(status)
+      const statusClassMap = {
+        'new': 'bg-yellow-100 text-yellow-800',
+        'completed_pending_delivery': 'bg-blue-100 text-blue-800',
+        'delivered': 'bg-green-100 text-green-800',
+        'cancelled': 'bg-red-100 text-red-800'
+      }
+      return statusClassMap[status] || 'bg-gray-100 text-gray-800'
+    }
+    
+    // تنسيق التاريخ
+    const formatDate = (dateString) => {
+      const date = new Date(dateString)
+      return new Intl.DateTimeFormat('ar-SA', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric'
+      }).format(date)
+    }
+    
+    // تنسيق العملة
+    const formatCurrency = (value) => {
+      return parseFloat(value).toFixed(2)
     }
     
     // جلب بيانات الطلب
     const fetchOrder = async () => {
-      loading.value = true
-      
       try {
+        loading.value = true
+        
         const { data, error } = await supabase
           .from('orders')
           .select('*')
@@ -367,77 +393,95 @@ export default {
         
         if (error) throw error
         
-        order.value = data
-        newStatus.value = data.status
-        
-        // جلب بيانات المندوب
-        if (data.sales_rep_id) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('name, email, phone')
-            .eq('id', data.sales_rep_id)
-            .single()
-          
-          if (!userError) {
-            salesRep.value = userData
+        if (data) {
+          // التحقق من صلاحية الوصول للطلب
+          if (user.value.role === 'representative' && data.sales_rep_id !== user.value.id) {
+            router.push('/orders')
+            return
           }
+          
+          order.value = data
+          newStatus.value = data.status
+          
+          // جلب بيانات المندوب
+          if (data.sales_rep_id) {
+            await fetchSalesRep(data.sales_rep_id)
+          }
+        } else {
+          router.push('/orders')
         }
       } catch (error) {
         console.error('خطأ في جلب بيانات الطلب:', error)
-        order.value = null
       } finally {
         loading.value = false
       }
     }
     
+    // جلب بيانات المندوب
+    const fetchSalesRep = async (salesRepId) => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, email, phone')
+          .eq('id', salesRepId)
+          .single()
+        
+        if (error) throw error
+        
+        salesRep.value = data
+      } catch (error) {
+        console.error('خطأ في جلب بيانات المندوب:', error)
+      }
+    }
+    
     // تحديث حالة الطلب
     const updateOrderStatus = async () => {
-      if (!order.value || newStatus.value === order.value.status) return
-      
       try {
         const { error } = await supabase
           .from('orders')
-          .update({ status: newStatus.value })
+          .update({ status: newStatus.value, updated_at: new Date() })
           .eq('id', order.value.id)
         
         if (error) throw error
         
         // تحديث حالة الطلب محلياً
         order.value.status = newStatus.value
-        
-        alert('تم تحديث حالة الطلب بنجاح')
       } catch (error) {
         console.error('خطأ في تحديث حالة الطلب:', error)
-        alert('حدث خطأ أثناء تحديث حالة الطلب')
+        alert(`خطأ في تحديث حالة الطلب: ${error.message}`)
         
-        // إعادة تعيين القيمة إلى الحالة الأصلية
+        // إعادة تعيين الحالة
         newStatus.value = order.value.status
       }
     }
     
     // مشاركة الطلب عبر واتساب
     const shareOnWhatsApp = () => {
-      if (!order.value) return
-      
       const message = `
 طلب رقم: ${order.value.id}
 العميل: ${order.value.customer_name}
+الهاتف: ${order.value.customer_phone || 'غير متوفر'}
+العنوان: ${order.value.customer_address || 'غير متوفر'}
 المنتج: ${order.value.product_description}
 الكمية: ${order.value.quantity}
-الإجمالي: ${formatCurrency(order.value.total)}
+السعر: ${order.value.unit_price} ر.س
+الإجمالي: ${order.value.total} ر.س
+الحالة: ${getStatusText(order.value.status)}
       `.trim()
       
       const encodedMessage = encodeURIComponent(message)
       window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
     }
     
-    // إنشاء فاتورة
+    // إنشاء فاتورة للطلب
     const generateInvoice = () => {
-      if (!order.value) return
-      
-      // هنا يمكن إضافة كود لإنشاء فاتورة PDF أو طباعة الفاتورة
-      alert('سيتم إضافة ميزة إنشاء الفاتورة قريباً')
+      // سيتم تنفيذ هذه الوظيفة لاحقاً
+      alert('سيتم تنفيذ هذه الوظيفة قريباً')
     }
+    
+    // متغيرات نافذة تأكيد الحذف
+    const showDeleteModal = ref(false)
+    const deleting = ref(false)
     
     // فتح نافذة تأكيد الحذف
     const confirmDeleteOrder = () => {
@@ -451,11 +495,9 @@ export default {
     
     // حذف الطلب
     const deleteOrder = async () => {
-      if (!order.value) return
-      
-      deleting.value = true
-      
       try {
+        deleting.value = true
+        
         const { error } = await supabase
           .from('orders')
           .delete()
@@ -468,19 +510,19 @@ export default {
         router.push('/orders')
       } catch (error) {
         console.error('خطأ في حذف الطلب:', error)
-        alert('حدث خطأ أثناء حذف الطلب')
+        alert(`خطأ في حذف الطلب: ${error.message}`)
       } finally {
         deleting.value = false
       }
     }
     
-    // تهيئة الصفحة
     onMounted(() => {
       fetchOrder()
     })
     
     return {
       user,
+      isAdmin,
       showMobileSidebar,
       toggleSidebar,
       loading,
@@ -492,39 +534,19 @@ export default {
       canChangeStatus,
       getStatusText,
       getStatusClass,
+      formatDate,
+      formatCurrency,
       updateOrderStatus,
       shareOnWhatsApp,
       generateInvoice,
+      
+      // حذف طلب
       showDeleteModal,
+      deleting,
       confirmDeleteOrder,
       closeDeleteModal,
-      deleteOrder,
-      deleting,
-      formatCurrency,
-      formatDate
+      deleteOrder
     }
   }
 }
 </script>
-
-<style scoped>
-.form-label {
-  @apply block text-sm font-medium text-gray-700 mb-1;
-}
-
-.form-input {
-  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm;
-}
-
-.btn {
-  @apply inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
-}
-
-.btn-primary {
-  @apply bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
-}
-
-.btn-danger {
-  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
-}
-</style>
