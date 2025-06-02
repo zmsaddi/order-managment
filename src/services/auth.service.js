@@ -83,13 +83,11 @@ export const authService = {
       throw new Error('ليس لديك صلاحية لإنشاء مستخدمين جدد')
     }
 
-    // إنشاء المستخدم في نظام المصادقة باستخدام signUp بدلاً من admin.createUser
-    const { data, error } = await supabase.auth.signUp({
+    // إنشاء المستخدم في نظام المصادقة
+    const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: window.location.origin
-      }
+      email_confirm: true
     })
 
     if (error) throw error
@@ -113,7 +111,7 @@ export const authService = {
 
     if (userError) {
       // إذا فشل إنشاء سجل المستخدم، قم بحذف المستخدم من نظام المصادقة
-      // ملاحظة: لا يمكن حذف المستخدم من واجهة المستخدم، لكن سيتم تجاهله في النظام
+      await supabase.auth.admin.deleteUser(data.user.id)
       throw userError
     }
 
@@ -181,6 +179,10 @@ export const authService = {
       throw new Error('لا يمكن لمدير المبيعات حذف مدير مبيعات آخر')
     }
 
+    // حذف المستخدم من نظام المصادقة
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId)
+    if (authError) throw authError
+
     // حذف سجل المستخدم من جدول المستخدمين
     const { error } = await supabase
       .from('users')
@@ -189,29 +191,22 @@ export const authService = {
 
     if (error) throw error
 
-    // ملاحظة: لا يمكن حذف المستخدم من نظام المصادقة من واجهة المستخدم
-    // يمكن للمدير حذفه يدوياً من لوحة تحكم Supabase إذا لزم الأمر
-
     return { success: true }
   },
 
   // إعادة تعيين كلمة المرور
-  async resetPassword(email) {
-    // إرسال رابط إعادة تعيين كلمة المرور
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
-    })
+  async resetPassword(userId, newPassword) {
+    // التحقق من صلاحيات المستخدم الحالي
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
+      throw new Error('ليس لديك صلاحية لإعادة تعيين كلمات المرور')
+    }
 
-    if (error) throw error
-
-    return { success: true }
-  },
-
-  // تغيير كلمة المرور
-  async changePassword(newPassword) {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    })
+    // إعادة تعيين كلمة المرور
+    const { error } = await supabase.auth.admin.updateUserById(
+      userId,
+      { password: newPassword }
+    )
 
     if (error) throw error
 
@@ -259,13 +254,11 @@ export const authService = {
       return { success: false, message: 'يوجد مستخدمين بالفعل في النظام' }
     }
 
-    // إنشاء المستخدم المدير الافتراضي باستخدام signUp
-    const { data, error } = await supabase.auth.signUp({
+    // إنشاء المستخدم المدير الافتراضي
+    const { data, error } = await supabase.auth.admin.createUser({
       email: 'msaddizakariya@gmail.com',
       password: 'Spain@2025',
-      options: {
-        emailRedirectTo: window.location.origin
-      }
+      email_confirm: true
     })
 
     if (error) throw error
@@ -286,6 +279,8 @@ export const authService = {
       .single()
 
     if (userError) {
+      // إذا فشل إنشاء سجل المستخدم، قم بحذف المستخدم من نظام المصادقة
+      await supabase.auth.admin.deleteUser(data.user.id)
       throw userError
     }
 

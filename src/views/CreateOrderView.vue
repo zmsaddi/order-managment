@@ -45,176 +45,204 @@
         
         <!-- محتوى الصفحة -->
         <main class="flex-1 overflow-y-auto p-4">
-          <div class="card bg-white rounded-lg shadow-sm p-6">
-            <h1 class="text-2xl font-bold text-gray-800 mb-6">{{ isEditing ? 'تعديل الطلب' : 'إنشاء طلب جديد' }}</h1>
-            
-            <form @submit.prevent="saveOrder">
-              <!-- بيانات العميل -->
-              <div class="mb-6">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">بيانات العميل</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div class="form-group">
-                    <label for="customer-name" class="form-label">اسم العميل</label>
-                    <input 
-                      type="text" 
-                      id="customer-name" 
-                      v-model="orderForm.customer_name" 
-                      class="form-input" 
-                      placeholder="أدخل اسم العميل" 
-                      required
-                    />
-                  </div>
-                  
-                  <div class="form-group">
-                    <label for="customer-phone" class="form-label">رقم الهاتف</label>
-                    <input 
-                      type="text" 
-                      id="customer-phone" 
-                      v-model="orderForm.customer_phone" 
-                      class="form-input" 
-                      placeholder="أدخل رقم الهاتف" 
-                    />
-                  </div>
-                  
-                  <div class="form-group">
-                    <label for="customer-address" class="form-label">العنوان</label>
-                    <input 
-                      type="text" 
-                      id="customer-address" 
-                      v-model="orderForm.customer_address" 
-                      class="form-input" 
-                      placeholder="أدخل العنوان" 
-                    />
+          <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">إنشاء طلب جديد</h1>
+            <router-link to="/orders" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+              </svg>
+              العودة إلى الطلبات
+            </router-link>
+          </div>
+          
+          <!-- نموذج إنشاء الطلب -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <form @submit.prevent="submitOrder">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- بيانات العميل -->
+                <div class="col-span-1 md:col-span-2">
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">بيانات العميل</h2>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label for="customer_name" class="form-label">اسم العميل <span class="text-red-500">*</span></label>
+                      <input 
+                        type="text" 
+                        id="customer_name" 
+                        v-model="order.customer_name" 
+                        class="form-input text-center" 
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label for="customer_phone" class="form-label">رقم الهاتف</label>
+                      <input 
+                        type="text" 
+                        id="customer_phone" 
+                        v-model="order.customer_phone" 
+                        class="form-input text-center"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label for="customer_address" class="form-label">العنوان</label>
+                      <input 
+                        type="text" 
+                        id="customer_address" 
+                        v-model="order.customer_address" 
+                        class="form-input text-center"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <!-- تفاصيل الطلب -->
-              <div class="mb-6">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">تفاصيل الطلب</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div class="form-group">
-                    <label for="product-description" class="form-label">وصف البضاعة</label>
+                
+                <!-- بيانات المنتج -->
+                <div class="col-span-1 md:col-span-2">
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">بيانات المنتج</h2>
+                  <div>
+                    <label for="product_description" class="form-label">وصف المنتج <span class="text-red-500">*</span></label>
                     <textarea 
-                      id="product-description" 
-                      v-model="orderForm.product_description" 
-                      class="form-input h-24" 
-                      placeholder="أدخل وصف البضاعة" 
+                      id="product_description" 
+                      v-model="order.product_description" 
+                      class="form-input text-center" 
+                      rows="3" 
                       required
-                    ></textarea>
-                  </div>
-                  
-                  <div class="form-group">
-                    <label for="notes" class="form-label">ملاحظات</label>
-                    <textarea 
-                      id="notes" 
-                      v-model="orderForm.notes" 
-                      class="form-input h-24" 
-                      placeholder="أدخل ملاحظات إضافية"
                     ></textarea>
                   </div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div class="form-group">
-                    <label for="quantity" class="form-label">الكمية</label>
-                    <input 
-                      type="number" 
-                      id="quantity" 
-                      v-model="orderForm.quantity" 
-                      class="form-input" 
-                      placeholder="أدخل الكمية" 
-                      min="0.01" 
-                      step="0.01" 
-                      required
-                      @input="calculateTotals"
-                    />
+                <!-- بيانات السعر والكمية -->
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">السعر والكمية</h2>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label for="quantity" class="form-label">الكمية <span class="text-red-500">*</span></label>
+                      <input 
+                        type="number" 
+                        id="quantity" 
+                        v-model="order.quantity" 
+                        class="form-input text-center" 
+                        min="0.01" 
+                        step="0.01" 
+                        required
+                        @input="calculateTotals"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label for="unit_price" class="form-label">سعر الوحدة <span class="text-red-500">*</span></label>
+                      <div class="relative">
+                        <input 
+                          type="number" 
+                          id="unit_price" 
+                          v-model="order.unit_price" 
+                          class="form-input text-center pr-8" 
+                          min="0.01" 
+                          step="0.01" 
+                          required
+                          @input="calculateTotals"
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label for="tax_rate" class="form-label">نسبة الضريبة (%)</label>
+                      <input 
+                        type="number" 
+                        id="tax_rate" 
+                        v-model="order.tax_rate" 
+                        class="form-input text-center" 
+                        min="0" 
+                        step="0.01"
+                        @input="calculateTotals"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label for="tax_amount" class="form-label">مبلغ الضريبة</label>
+                      <div class="relative">
+                        <input 
+                          type="number" 
+                          id="tax_amount" 
+                          v-model="order.tax_amount" 
+                          class="form-input text-center pr-8" 
+                          readonly
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div class="form-group">
-                    <label for="unit-price" class="form-label">سعر الوحدة (ر.س)</label>
-                    <input 
-                      type="number" 
-                      id="unit-price" 
-                      v-model="orderForm.unit_price" 
-                      class="form-input" 
-                      placeholder="أدخل سعر الوحدة" 
-                      min="0.01" 
-                      step="0.01" 
-                      required
-                      @input="calculateTotals"
-                    />
-                  </div>
-                  
-                  <div class="form-group">
-                    <label for="tax-rate" class="form-label">نسبة الضريبة (%)</label>
-                    <input 
-                      type="number" 
-                      id="tax-rate" 
-                      v-model="orderForm.tax_rate" 
-                      class="form-input" 
-                      placeholder="أدخل نسبة الضريبة" 
-                      min="0" 
-                      step="0.01"
-                      @input="calculateTotals"
-                    />
+                </div>
+                
+                <!-- الإجماليات والملاحظات -->
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">الإجماليات والملاحظات</h2>
+                  <div class="grid grid-cols-1 gap-4">
+                    <div>
+                      <label for="subtotal" class="form-label">المجموع الفرعي</label>
+                      <div class="relative">
+                        <input 
+                          type="number" 
+                          id="subtotal" 
+                          v-model="order.subtotal" 
+                          class="form-input text-center pr-8" 
+                          readonly
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label for="total" class="form-label">الإجمالي</label>
+                      <div class="relative">
+                        <input 
+                          type="number" 
+                          id="total" 
+                          v-model="order.total" 
+                          class="form-input text-center pr-8 font-bold" 
+                          readonly
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label for="notes" class="form-label">ملاحظات</label>
+                      <textarea 
+                        id="notes" 
+                        v-model="order.notes" 
+                        class="form-input text-center" 
+                        rows="3"
+                      ></textarea>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <!-- حالة الطلب -->
-              <div class="mb-6">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">حالة الطلب</h2>
-                <div class="form-group">
-                  <label for="status" class="form-label">الحالة</label>
-                  <select 
-                    id="status" 
-                    v-model="orderForm.status" 
-                    class="form-input" 
-                    required
-                  >
-                    <option value="new">جديد</option>
-                    <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
-                    <option value="delivered">تم التسليم</option>
-                    <option value="cancelled">ملغى</option>
-                  </select>
-                </div>
-              </div>
-              
-              <!-- ملخص الطلب -->
-              <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">ملخص الطلب</h2>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <p class="text-sm text-gray-600">المجموع الفرعي:</p>
-                    <p class="text-lg font-semibold">{{ formatCurrency(orderForm.subtotal) }} ر.س</p>
-                  </div>
-                  <div>
-                    <p class="text-sm text-gray-600">قيمة الضريبة:</p>
-                    <p class="text-lg font-semibold">{{ formatCurrency(orderForm.tax_amount) }} ر.س</p>
-                  </div>
-                  <div class="col-span-2">
-                    <p class="text-sm text-gray-600">الإجمالي:</p>
-                    <p class="text-xl font-bold text-sky-700">{{ formatCurrency(orderForm.total) }} ر.س</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center mb-4">
-                {{ errorMessage }}
-              </div>
-              
-              <div class="flex justify-end space-x-3 space-x-reverse">
-                <router-link to="/orders" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300">
-                  إلغاء
-                </router-link>
+              <div class="mt-8 flex justify-end">
+                <button 
+                  type="button" 
+                  class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 ml-2"
+                  @click="resetForm"
+                >
+                  إعادة تعيين
+                </button>
                 <button 
                   type="submit" 
-                  class="btn btn-primary" 
-                  :disabled="saving"
+                  class="btn btn-primary"
+                  :disabled="submitting"
                 >
-                  <span v-if="saving">جاري الحفظ...</span>
-                  <span v-else>{{ isEditing ? 'تحديث الطلب' : 'إنشاء الطلب' }}</span>
+                  <span v-if="submitting">جاري الحفظ...</span>
+                  <span v-else>حفظ الطلب</span>
                 </button>
               </div>
             </form>
@@ -226,10 +254,11 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import SidebarMenu from '@/components/SidebarMenu.vue'
+import { formatCurrency } from '@/utils/formatters'
 
 export default {
   name: 'CreateOrderView',
@@ -238,27 +267,14 @@ export default {
   },
   setup() {
     const router = useRouter()
-    const route = useRoute()
     const showMobileSidebar = ref(false)
-    const saving = ref(false)
-    const errorMessage = ref('')
+    const submitting = ref(false)
     
     // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
     
-    // التحقق من صلاحيات المستخدم
-    const isAdmin = computed(() => {
-      return ['admin', 'sales_manager'].includes(user.value.role)
-    })
-    
-    // التحقق مما إذا كان تعديل أم إنشاء جديد
-    const isEditing = computed(() => {
-      return !!route.params.id
-    })
-    
-    // نموذج الطلب
-    const orderForm = ref({
-      id: null,
+    // بيانات الطلب
+    const order = reactive({
       customer_name: '',
       customer_phone: '',
       customer_address: '',
@@ -279,150 +295,113 @@ export default {
       showMobileSidebar.value = !showMobileSidebar.value
     }
     
-    // حساب إجماليات الطلب
+    // حساب الإجماليات
     const calculateTotals = () => {
-      const quantity = parseFloat(orderForm.value.quantity) || 0
-      const unitPrice = parseFloat(orderForm.value.unit_price) || 0
-      const taxRate = parseFloat(orderForm.value.tax_rate) || 0
+      // حساب المجموع الفرعي
+      order.subtotal = parseFloat(order.quantity) * parseFloat(order.unit_price)
       
-      const subtotal = quantity * unitPrice
-      const taxAmount = subtotal * (taxRate / 100)
-      const total = subtotal + taxAmount
+      // حساب مبلغ الضريبة
+      order.tax_amount = order.subtotal * (parseFloat(order.tax_rate) / 100)
       
-      orderForm.value.subtotal = subtotal
-      orderForm.value.tax_amount = taxAmount
-      orderForm.value.total = total
+      // حساب الإجمالي
+      order.total = order.subtotal + order.tax_amount
     }
     
-    // تنسيق العملة
-    const formatCurrency = (value) => {
-      return parseFloat(value).toFixed(2)
+    // إعادة تعيين النموذج
+    const resetForm = () => {
+      Object.assign(order, {
+        customer_name: '',
+        customer_phone: '',
+        customer_address: '',
+        product_description: '',
+        quantity: 1,
+        unit_price: 0,
+        subtotal: 0,
+        tax_rate: 0,
+        tax_amount: 0,
+        total: 0,
+        notes: '',
+        status: 'new',
+        sales_rep_id: user.value.id
+      })
     }
     
-    // جلب بيانات الطلب للتعديل
-    const fetchOrder = async (id) => {
+    // إرسال الطلب
+    const submitOrder = async () => {
+      submitting.value = true
+      
       try {
+        // حساب الإجماليات مرة أخرى للتأكد من صحتها
+        calculateTotals()
+        
+        // إرسال الطلب إلى قاعدة البيانات
         const { data, error } = await supabase
           .from('orders')
-          .select('*')
-          .eq('id', id)
-          .single()
+          .insert([
+            {
+              customer_name: order.customer_name,
+              customer_phone: order.customer_phone,
+              customer_address: order.customer_address,
+              product_description: order.product_description,
+              quantity: parseFloat(order.quantity),
+              unit_price: parseFloat(order.unit_price),
+              subtotal: parseFloat(order.subtotal),
+              tax_rate: parseFloat(order.tax_rate),
+              tax_amount: parseFloat(order.tax_amount),
+              total: parseFloat(order.total),
+              notes: order.notes,
+              status: order.status,
+              sales_rep_id: order.sales_rep_id
+            }
+          ])
+          .select()
         
         if (error) throw error
         
-        if (data) {
-          // التحقق من صلاحية الوصول للطلب
-          if (user.value.role === 'representative' && data.sales_rep_id !== user.value.id) {
-            router.push('/orders')
-            return
-          }
-          
-          orderForm.value = data
-        }
+        // الانتقال إلى صفحة تفاصيل الطلب
+        router.push({ name: 'order-details', params: { id: data[0].id } })
       } catch (error) {
-        console.error('خطأ في جلب بيانات الطلب:', error)
-        errorMessage.value = 'خطأ في جلب بيانات الطلب'
-        router.push('/orders')
-      }
-    }
-    
-    // حفظ الطلب
-    const saveOrder = async () => {
-      try {
-        saving.value = true
-        errorMessage.value = ''
-        
-        // حساب الإجماليات قبل الحفظ
-        calculateTotals()
-        
-        if (isEditing.value) {
-          // تحديث الطلب
-          const { error } = await supabase
-            .from('orders')
-            .update({
-              customer_name: orderForm.value.customer_name,
-              customer_phone: orderForm.value.customer_phone,
-              customer_address: orderForm.value.customer_address,
-              product_description: orderForm.value.product_description,
-              quantity: orderForm.value.quantity,
-              unit_price: orderForm.value.unit_price,
-              subtotal: orderForm.value.subtotal,
-              tax_rate: orderForm.value.tax_rate,
-              tax_amount: orderForm.value.tax_amount,
-              total: orderForm.value.total,
-              notes: orderForm.value.notes,
-              status: orderForm.value.status,
-              updated_at: new Date()
-            })
-            .eq('id', orderForm.value.id)
-          
-          if (error) throw error
-          
-          router.push(`/orders/${orderForm.value.id}`)
-        } else {
-          // إنشاء طلب جديد
-          const { data, error } = await supabase
-            .from('orders')
-            .insert([
-              {
-                customer_name: orderForm.value.customer_name,
-                customer_phone: orderForm.value.customer_phone,
-                customer_address: orderForm.value.customer_address,
-                product_description: orderForm.value.product_description,
-                quantity: orderForm.value.quantity,
-                unit_price: orderForm.value.unit_price,
-                subtotal: orderForm.value.subtotal,
-                tax_rate: orderForm.value.tax_rate,
-                tax_amount: orderForm.value.tax_amount,
-                total: orderForm.value.total,
-                notes: orderForm.value.notes,
-                status: orderForm.value.status,
-                sales_rep_id: user.value.id,
-                created_at: new Date(),
-                updated_at: new Date()
-              }
-            ])
-            .select()
-          
-          if (error) throw error
-          
-          if (data && data.length > 0) {
-            router.push(`/orders/${data[0].id}`)
-          } else {
-            router.push('/orders')
-          }
-        }
-      } catch (error) {
-        console.error('خطأ في حفظ الطلب:', error)
-        errorMessage.value = `خطأ في حفظ الطلب: ${error.message}`
+        console.error('خطأ في إنشاء الطلب:', error)
+        alert('حدث خطأ أثناء إنشاء الطلب. يرجى المحاولة مرة أخرى.')
       } finally {
-        saving.value = false
+        submitting.value = false
       }
     }
     
+    // تهيئة الصفحة
     onMounted(() => {
-      // إذا كان تعديل، جلب بيانات الطلب
-      if (route.params.id) {
-        fetchOrder(route.params.id)
-      } else {
-        // حساب الإجماليات للطلب الجديد
-        calculateTotals()
-      }
+      calculateTotals()
     })
     
     return {
       user,
-      isAdmin,
       showMobileSidebar,
       toggleSidebar,
-      saving,
-      errorMessage,
-      isEditing,
-      orderForm,
+      order,
       calculateTotals,
-      formatCurrency,
-      saveOrder
+      resetForm,
+      submitOrder,
+      submitting,
+      formatCurrency
     }
   }
 }
 </script>
+
+<style scoped>
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.form-input {
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm;
+}
+
+.btn {
+  @apply inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
+}
+</style>

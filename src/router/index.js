@@ -16,6 +16,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/confirm-account',
+    name: 'confirm-account',
+    component: () => import('@/views/ConfirmAccountView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),

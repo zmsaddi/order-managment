@@ -145,10 +145,10 @@
                   <tr v-for="order in filteredOrders" :key="order.id" class="hover:bg-gray-50">
                     <td class="px-4 py-3 text-sm text-gray-900">#{{ order.id }}</td>
                     <td class="px-4 py-3 text-sm text-gray-900">{{ order.customer_name }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">{{ order.total }} ر.س</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">{{ formatCurrency(order.total) }}</td>
                     <td class="px-4 py-3 text-sm">
-                      <span :class="getStatusClass(order.status)" class="px-2 py-1 text-xs rounded-full">
-                        {{ getStatusText(order.status) }}
+                      <span :class="getOrderStatusClass(order.status)" class="px-2 py-1 text-xs rounded-full">
+                        {{ getOrderStatusText(order.status) }}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(order.created_at) }}</td>
@@ -264,6 +264,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { authService } from '@/services/auth.service'
 import SidebarMenu from '@/components/SidebarMenu.vue'
+import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass } from '@/utils/formatters'
 
 export default {
   name: 'OrdersView',
@@ -327,69 +328,17 @@ export default {
       showMobileSidebar.value = !showMobileSidebar.value
     }
     
-    // تسجيل الخروج
-    const logout = async () => {
-      try {
-        await authService.logout()
-        localStorage.removeItem('user')
-        router.push({ name: 'login' })
-      } catch (error) {
-        console.error('خطأ في تسجيل الخروج:', error)
-      }
-    }
-    
-    // الحصول على نص حالة الطلب
-    const getStatusText = (status) => {
-      const statusMap = {
-        'new': 'جديد',
-        'completed_pending_delivery': 'مكتمل بانتظار التسليم',
-        'delivered': 'تم التسليم',
-        'cancelled': 'ملغى'
-      }
-      return statusMap[status] || status
-    }
-    
-    // الحصول على فئة CSS لحالة الطلب
-    const getStatusClass = (status) => {
-      const statusClassMap = {
-        'new': 'bg-yellow-100 text-yellow-800',
-        'completed_pending_delivery': 'bg-blue-100 text-blue-800',
-        'delivered': 'bg-green-100 text-green-800',
-        'cancelled': 'bg-red-100 text-red-800'
-      }
-      return statusClassMap[status] || 'bg-gray-100 text-gray-800'
-    }
-    
-    // تنسيق التاريخ
-    const formatDate = (dateString) => {
-      const date = new Date(dateString)
-      return new Intl.DateTimeFormat('ar-SA', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }).format(date)
-    }
-    
-    // إعادة تعيين الفلاتر
-    const resetFilters = () => {
-      searchQuery.value = ''
-      statusFilter.value = ''
-      dateFrom.value = ''
-      dateTo.value = ''
-      fetchOrders()
-    }
-    
-    // جلب الطلبات
+    // جلب الطلبات من قاعدة البيانات
     const fetchOrders = async () => {
+      loading.value = true
+      
       try {
-        loading.value = true
-        
         let query = supabase
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false })
         
-        // إذا كان المستخدم مندوباً، فقط اعرض طلباته
+        // إذا كان المستخدم مندوباً، اعرض طلباته فقط
         if (user.value.role === 'representative') {
           query = query.eq('sales_rep_id', user.value.id)
         }
@@ -406,39 +355,24 @@ export default {
       }
     }
     
-    // مشاركة الطلب عبر واتساب
-    const shareOnWhatsApp = (order) => {
-      const message = `
-طلب رقم: ${order.id}
-العميل: ${order.customer_name}
-الهاتف: ${order.customer_phone || 'غير متوفر'}
-العنوان: ${order.customer_address || 'غير متوفر'}
-المنتج: ${order.product_description}
-الكمية: ${order.quantity}
-السعر: ${order.unit_price} ر.س
-الإجمالي: ${order.total} ر.س
-الحالة: ${getStatusText(order.status)}
-      `.trim()
-      
-      const encodedMessage = encodeURIComponent(message)
-      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
+    // إعادة تعيين الفلاتر
+    const resetFilters = () => {
+      searchQuery.value = ''
+      statusFilter.value = ''
+      dateFrom.value = ''
+      dateTo.value = ''
+      fetchOrders()
     }
-    
-    // إنشاء فاتورة للطلب
-    const generateInvoice = (order) => {
-      router.push(`/orders/${order.id}?invoice=true`)
-    }
-    
-    // متغيرات نافذة تأكيد الحذف
-    const showDeleteModal = ref(false)
-    const orderToDelete = ref(null)
-    const deleting = ref(false)
     
     // التحقق من إمكانية حذف الطلب
     const canDeleteOrder = (order) => {
-      // فقط المدراء يمكنهم حذف الطلبات
-      return isAdmin.value
+      return isAdmin.value || (user.value.id === order.sales_rep_id && order.status === 'new')
     }
+    
+    // متغيرات لنافذة تأكيد الحذف
+    const showDeleteModal = ref(false)
+    const orderToDelete = ref(null)
+    const deleting = ref(false)
     
     // فتح نافذة تأكيد الحذف
     const confirmDeleteOrder = (order) => {
@@ -456,9 +390,9 @@ export default {
     const deleteOrder = async () => {
       if (!orderToDelete.value) return
       
+      deleting.value = true
+      
       try {
-        deleting.value = true
-        
         const { error } = await supabase
           .from('orders')
           .delete()
@@ -466,19 +400,45 @@ export default {
         
         if (error) throw error
         
-        // إعادة تحميل الطلبات
-        await fetchOrders()
+        // حذف الطلب من القائمة المحلية
+        orders.value = orders.value.filter(order => order.id !== orderToDelete.value.id)
         
-        // إغلاق النافذة
         closeDeleteModal()
       } catch (error) {
         console.error('خطأ في حذف الطلب:', error)
-        alert(`خطأ في حذف الطلب: ${error.message}`)
+        alert('حدث خطأ أثناء حذف الطلب. يرجى المحاولة مرة أخرى.')
       } finally {
         deleting.value = false
       }
     }
     
+    // مشاركة الطلب عبر واتساب
+    const shareOnWhatsApp = (order) => {
+      const message = `
+طلب رقم: ${order.id}
+العميل: ${order.customer_name}
+المنتج: ${order.product_description}
+الكمية: ${order.quantity}
+السعر: ${formatCurrency(order.unit_price)}
+الإجمالي: ${formatCurrency(order.total)}
+التاريخ: ${formatDate(order.created_at)}
+      `.trim()
+      
+      const encodedMessage = encodeURIComponent(message)
+      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
+    }
+    
+    // إنشاء فاتورة للطلب
+    const generateInvoice = (order) => {
+      // فتح صفحة تفاصيل الطلب مع تمرير معلمة لإنشاء الفاتورة
+      router.push({ 
+        name: 'order-details', 
+        params: { id: order.id },
+        query: { invoice: 'true' }
+      })
+    }
+    
+    // جلب الطلبات عند تحميل الصفحة
     onMounted(() => {
       fetchOrders()
     })
@@ -488,31 +448,51 @@ export default {
       isAdmin,
       showMobileSidebar,
       toggleSidebar,
-      logout,
       loading,
       orders,
+      filteredOrders,
       searchQuery,
       statusFilter,
       dateFrom,
       dateTo,
-      filteredOrders,
-      getStatusText,
-      getStatusClass,
-      formatDate,
-      resetFilters,
       fetchOrders,
-      shareOnWhatsApp,
-      generateInvoice,
-      
-      // حذف طلب
+      resetFilters,
+      formatCurrency,
+      formatDate,
+      getOrderStatusText,
+      getOrderStatusClass,
+      canDeleteOrder,
       showDeleteModal,
       orderToDelete,
       deleting,
-      canDeleteOrder,
       confirmDeleteOrder,
       closeDeleteModal,
-      deleteOrder
+      deleteOrder,
+      shareOnWhatsApp,
+      generateInvoice
     }
   }
 }
 </script>
+
+<style scoped>
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.form-input {
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm;
+}
+
+.btn {
+  @apply inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+}
+</style>
