@@ -88,7 +88,7 @@ export const authService = {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/confirm-account`,
+        emailRedirectTo: 'https://order-managment-7h2p.vercel.app/confirm-account',
         data: {
           email_confirmed: true
         }
@@ -197,7 +197,7 @@ export const authService = {
   async resetPassword(email) {
     // إرسال رابط إعادة تعيين كلمة المرور
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: 'https://order-managment-7h2p.vercel.app/reset-password'
     })
 
     if (error) throw error
@@ -262,7 +262,7 @@ export const authService = {
       email: 'msaddizakariya@gmail.com',
       password: 'Spain@2025',
       options: {
-        emailRedirectTo: `${window.location.origin}/confirm-account`,
+        emailRedirectTo: 'https://order-managment-7h2p.vercel.app/confirm-account',
         data: {
           email_confirmed: true
         }
