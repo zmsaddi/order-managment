@@ -75,7 +75,7 @@ export const authService = {
     if (error) throw error
   },
 
-  // إنشاء مستخدم جديد
+  // إنشاء مستخدم جديد - تم تعديله للاعتماد على التريجر التلقائي في قاعدة البيانات
   async createUser(email, password, userData) {
     // التحقق من صلاحيات المستخدم الحالي
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
@@ -83,40 +83,50 @@ export const authService = {
       throw new Error('ليس لديك صلاحية لإنشاء مستخدمين جدد')
     }
 
-    // إنشاء المستخدم في نظام المصادقة
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
-    })
-
-    if (error) throw error
-
-    // إنشاء سجل المستخدم في جدول المستخدمين
-    const { data: newUser, error: userError } = await supabase
-      .from('users')
-      .insert([
-        {
-          id: data.user.id,
-          email: email,
-          name: userData.name,
-          role: userData.role,
-          phone: userData.phone,
-          address: userData.address,
-          status: userData.status
+    try {
+      // إنشاء المستخدم في نظام المصادقة
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role
+          }
         }
-      ])
-      .select()
-      .single()
+      })
 
-    if (userError) {
-      // إذا فشل إنشاء سجل المستخدم، قم بحذف المستخدم من نظام المصادقة
-      await supabase.auth.admin.deleteUser(data.user.id)
-      throw userError
-    }
+      if (error) throw error
 
-    return {
-      user: newUser
+      // لا حاجة لاستدعاء وظيفة تفعيل المستخدم، التريجر في قاعدة البيانات سيقوم بذلك تلقائياً
+
+      // إنشاء سجل المستخدم في جدول المستخدمين
+      const { data: newUser, error: userError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: data.user.id,
+            email: email,
+            name: userData.name,
+            role: userData.role,
+            phone: userData.phone,
+            address: userData.address,
+            status: userData.status
+          }
+        ])
+        .select()
+        .single()
+
+      if (userError) {
+        throw userError
+      }
+
+      return {
+        user: newUser
+      }
+    } catch (error) {
+      console.error('خطأ في إنشاء المستخدم:', error)
+      throw error
     }
   },
 
@@ -179,10 +189,6 @@ export const authService = {
       throw new Error('لا يمكن لمدير المبيعات حذف مدير مبيعات آخر')
     }
 
-    // حذف المستخدم من نظام المصادقة
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-    if (authError) throw authError
-
     // حذف سجل المستخدم من جدول المستخدمين
     const { error } = await supabase
       .from('users')
@@ -195,18 +201,22 @@ export const authService = {
   },
 
   // إعادة تعيين كلمة المرور
-  async resetPassword(userId, newPassword) {
-    // التحقق من صلاحيات المستخدم الحالي
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
-      throw new Error('ليس لديك صلاحية لإعادة تعيين كلمات المرور')
-    }
+  async resetPassword(email) {
+    // إرسال رابط إعادة تعيين كلمة المرور
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://order-managment-7h2p.vercel.app/reset-password'
+    })
 
-    // إعادة تعيين كلمة المرور
-    const { error } = await supabase.auth.admin.updateUserById(
-      userId,
-      { password: newPassword }
-    )
+    if (error) throw error
+
+    return { success: true }
+  },
+
+  // تغيير كلمة المرور
+  async changePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
 
     if (error) throw error
 
@@ -255,13 +265,20 @@ export const authService = {
     }
 
     // إنشاء المستخدم المدير الافتراضي
-    const { data, error } = await supabase.auth.admin.createUser({
+    const { data, error } = await supabase.auth.signUp({
       email: 'msaddizakariya@gmail.com',
       password: 'Spain@2025',
-      email_confirm: true
+      options: {
+        data: {
+          name: 'مدير النظام',
+          role: 'admin'
+        }
+      }
     })
 
     if (error) throw error
+
+    // لا حاجة لاستدعاء وظيفة تفعيل المستخدم، التريجر في قاعدة البيانات سيقوم بذلك تلقائياً
 
     // إنشاء سجل المستخدم في جدول المستخدمين
     const { data: newUser, error: userError } = await supabase
@@ -279,8 +296,6 @@ export const authService = {
       .single()
 
     if (userError) {
-      // إذا فشل إنشاء سجل المستخدم، قم بحذف المستخدم من نظام المصادقة
-      await supabase.auth.admin.deleteUser(data.user.id)
       throw userError
     }
 
