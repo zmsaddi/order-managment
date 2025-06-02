@@ -81,7 +81,7 @@
                   <td class="py-3 px-4 text-center">{{ order.id }}</td>
                   <td class="py-3 px-4 text-center">{{ order.customer_name }}</td>
                   <td class="py-3 px-4 text-center">{{ formatDate(order.created_at) }}</td>
-                  <td class="py-3 px-4 text-center">{{ order.total }} ريال</td>
+                  <td class="py-3 px-4 text-center">{{ formatCurrency(order.total) }}</td>
                   <td class="py-3 px-4 text-center">
                     <span :class="getStatusClass(order.status)">{{ getStatusText(order.status) }}</span>
                   </td>
@@ -101,11 +101,11 @@
             </div>
             <div class="bg-white p-4 rounded-lg shadow text-center">
               <p class="text-gray-600 mb-2">إجمالي المبيعات</p>
-              <p class="text-2xl font-bold text-sky-700">{{ summary.totalSales }} ريال</p>
+              <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.totalSales) }}</p>
             </div>
             <div class="bg-white p-4 rounded-lg shadow text-center">
               <p class="text-gray-600 mb-2">متوسط قيمة الطلب</p>
-              <p class="text-2xl font-bold text-sky-700">{{ summary.averageOrderValue }} ريال</p>
+              <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.averageOrderValue) }}</p>
             </div>
           </div>
         </div>
@@ -127,6 +127,7 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { supabase } from '@/services/supabase'
+import { formatCurrency, formatDate } from '@/utils/formatters'
 
 export default {
   name: 'ReportsView',
