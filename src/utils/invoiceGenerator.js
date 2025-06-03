@@ -5,8 +5,8 @@ import { formatCurrency, formatDate, getOrderStatusText } from './formatters';
 /**
  * توليد فاتورة PDF للطلب
  * @param {Object} order - بيانات الطلب
- * @param {Array} products - منتجات الطلب
- * @param {Object} salesRep - بيانات المندوب
+ * @param {Array} products - منتجات الطلب (اختياري)
+ * @param {Object} salesRep - بيانات المندوب (اختياري)
  * @returns {jsPDF} - ملف PDF
  */
 export const generateInvoice = (order, products, salesRep) => {
@@ -46,98 +46,26 @@ export const generateInvoice = (order, products, salesRep) => {
   doc.text(`رقم الهاتف: ${salesRep?.phone || 'غير متوفر'}`, doc.internal.pageSize.width - 20, 70, { align: 'right' });
   doc.text(`البريد الإلكتروني: ${salesRep?.email || 'غير متوفر'}`, doc.internal.pageSize.width - 20, 77, { align: 'right' });
   
-  // إضافة جدول المنتجات
+  // إضافة تفاصيل المنتج
   doc.setFontSize(14);
-  doc.text('تفاصيل المنتجات', doc.internal.pageSize.width / 2, 90, { align: 'center' });
+  doc.text('تفاصيل المنتج', doc.internal.pageSize.width / 2, 90, { align: 'center' });
   
-  // إعداد بيانات الجدول
-  const tableHeaders = [['#', 'الوصف', 'الكمية', 'سعر الوحدة', 'المجموع']];
-  const tableData = products.map((product, index) => [
-    index + 1,
-    product.description,
-    product.quantity,
-    formatCurrency(product.unit_price),
-    formatCurrency(product.subtotal)
-  ]);
-  
-  // إضافة الجدول
-  doc.autoTable({
-    head: tableHeaders,
-    body: tableData,
-    startY: 95,
-    theme: 'grid',
-    styles: {
-      font: 'Helvetica',
-      halign: 'center',
-      valign: 'middle',
-      fontSize: 10,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [41, 128, 185],
-      textColor: 255,
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [240, 240, 240],
-    },
-    columnStyles: {
-      0: { cellWidth: 15 },
-      1: { cellWidth: 'auto' },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 35 },
-      4: { cellWidth: 35 },
-    },
-  });
-  
-  // الحصول على موضع Y بعد الجدول
-  const finalY = doc.lastAutoTable.finalY + 10;
-  
-  // إضافة ملاحظات المنتجات إذا وجدت
-  let currentY = finalY;
-  let hasNotes = false;
-  
-  products.forEach((product, index) => {
-    if (product.notes) {
-      if (!hasNotes) {
-        doc.setFontSize(12);
-        doc.text('ملاحظات المنتجات:', 20, currentY);
-        currentY += 7;
-        hasNotes = true;
-      }
-      
-      doc.setFontSize(10);
-      doc.text(`${index + 1}. ${product.description}: ${product.notes}`, 25, currentY);
-      currentY += 7;
-    }
-  });
-  
-  // إضافة ملاحظات الطلب إذا وجدت
-  if (order.notes) {
-    currentY += 5;
-    doc.setFontSize(12);
-    doc.text('ملاحظات الطلب:', 20, currentY);
-    currentY += 7;
-    doc.setFontSize(10);
-    doc.text(order.notes, 25, currentY);
-    currentY += 10;
-  }
+  // إضافة وصف المنتج
+  doc.setFontSize(12);
+  doc.text(`الوصف: ${order.product_description}`, 20, 100);
+  doc.text(`الكمية: ${order.quantity}`, 20, 107);
+  doc.text(`سعر الوحدة: ${formatCurrency(order.unit_price)}`, 20, 114);
   
   // إضافة ملخص الطلب
-  currentY = Math.max(currentY + 5, finalY + 20);
+  doc.setFontSize(14);
+  doc.text('ملخص الطلب', doc.internal.pageSize.width - 20, 130, { align: 'right' });
   
   doc.setFontSize(12);
-  doc.text('ملخص الطلب', doc.internal.pageSize.width - 20, currentY, { align: 'right' });
-  currentY += 7;
-  
-  doc.text(`المجموع الفرعي: ${formatCurrency(order.subtotal)}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });
-  currentY += 7;
-  
-  doc.text(`قيمة الضريبة (${order.tax_rate}%): ${formatCurrency(order.tax_amount)}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });
-  currentY += 7;
+  doc.text(`المجموع الفرعي: ${formatCurrency(order.subtotal)}`, doc.internal.pageSize.width - 20, 140, { align: 'right' });
+  doc.text(`قيمة الضريبة (${order.tax_rate}%): ${formatCurrency(order.tax_amount)}`, doc.internal.pageSize.width - 20, 147, { align: 'right' });
   
   doc.setFontSize(14);
-  doc.text(`الإجمالي: ${formatCurrency(order.total)}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });
+  doc.text(`الإجمالي: ${formatCurrency(order.total)}`, doc.internal.pageSize.width - 20, 157, { align: 'right' });
   
   // إضافة تذييل الصفحة
   const pageCount = doc.internal.getNumberOfPages();
@@ -148,5 +76,20 @@ export const generateInvoice = (order, products, salesRep) => {
     doc.text('نظام إدارة الطلبات', doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 5, { align: 'center' });
   }
   
+  // حفظ الفاتورة كملف PDF
+  doc.save(`فاتورة_${order.id}.pdf`);
+  
   return doc;
+};
+
+/**
+ * توليد فاتورة من بيانات الطلب
+ * @param {Object} order - بيانات الطلب
+ * @param {Object} salesRep - بيانات المندوب (اختياري)
+ */
+export const generateInvoiceFromOrder = (order, salesRep) => {
+  if (!order) return;
+  
+  // استدعاء دالة توليد الفاتورة
+  return generateInvoice(order, null, salesRep);
 };
