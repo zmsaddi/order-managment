@@ -467,10 +467,16 @@ export default {
           throw new Error('معرف المستخدم غير متوفر. يرجى تسجيل الخروج وإعادة تسجيل الدخول.')
         }
         
+        // التحقق من جلسة المستخدم الحالية
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          throw new Error('جلسة المستخدم غير متوفرة. يرجى تسجيل الخروج وإعادة تسجيل الدخول.')
+        }
+        
         // حساب الإجماليات مرة أخرى للتأكد من صحتها
         calculateTotals()
         
-        // إنشاء الطلب الرئيسي
+        // إنشاء الطلب الرئيسي مع التأكد من إرسال معرف المستخدم الصحيح
         const { data: orderData, error: orderError } = await supabase
           .from('orders')
           .insert([
@@ -484,7 +490,7 @@ export default {
               total: parseFloat(order.total),
               notes: order.notes,
               status: order.status,
-              sales_rep_id: order.sales_rep_id
+              sales_rep_id: session.user.id // استخدام معرف المستخدم من الجلسة الحالية
             }
           ])
           .select()
