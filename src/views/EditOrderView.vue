@@ -536,8 +536,9 @@ export default {
         // إضافة المنتجات المحدثة
         const orderProducts = products.value.map(product => ({
           order_id: order.id,
-          description: product.description,
-          notes: product.notes,
+          name: product.description || 'منتج بدون اسم', // إضافة حقل name مع قيمة افتراضية إذا كان فارغاً
+          description: product.description || 'منتج بدون وصف',
+          notes: product.notes || '',
           quantity: parseFloat(product.quantity),
           unit_price: parseFloat(product.unit_price),
           subtotal: parseFloat(product.subtotal)
