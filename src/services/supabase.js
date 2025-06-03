@@ -1,6 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
+import { config } from '@/config'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://lwsicuqaduiqklrfchui.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_KEY
+// إنشاء دالة للحصول على عميل Supabase
+let supabaseInstance = null
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const getSupabase = () => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(
+      config.supabaseUrl,
+      config.supabaseKey
+    )
+  }
+  return supabaseInstance
+}
+
+// للتوافق مع الكود الحالي
+export const supabase = getSupabase()
