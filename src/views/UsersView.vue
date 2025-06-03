@@ -3,75 +3,7 @@
     <!-- القائمة الجانبية والشريط العلوي -->
     <div class="flex h-screen overflow-hidden">
       <!-- القائمة الجانبية -->
-      <aside class="bg-sky-800 text-white w-64 flex-shrink-0 hidden md:block">
-        <div class="p-4 border-b border-sky-700">
-          <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
-        </div>
-        <nav class="mt-4">
-          <ul class="space-y-1">
-            <li>
-              <router-link to="/dashboard" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/dashboard' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                  </svg>
-                </span>
-                <span>لوحة التحكم</span>
-              </router-link>
-            </li>
-            <li v-if="isAdmin">
-              <router-link to="/users" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/users' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                  </svg>
-                </span>
-                <span>المستخدمين</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/orders" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/orders' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>الطلبات</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/reports" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/reports' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>التقارير</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/profile" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/profile' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>الملف الشخصي</span>
-              </router-link>
-            </li>
-            <li>
-              <button @click="logout" class="w-full flex items-center px-4 py-3 hover:bg-sky-700 transition-colors text-left">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>تسجيل الخروج</span>
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+      <SidebarMenu :user="user" />
       
       <!-- المحتوى الرئيسي -->
       <div class="flex-1 flex flex-col overflow-hidden">
@@ -107,70 +39,7 @@
                 </svg>
               </button>
             </div>
-            <nav class="mt-4">
-              <ul class="space-y-1">
-                <li>
-                  <router-link to="/dashboard" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/dashboard' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                      </svg>
-                    </span>
-                    <span>لوحة التحكم</span>
-                  </router-link>
-                </li>
-                <li v-if="isAdmin">
-                  <router-link to="/users" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/users' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                      </svg>
-                    </span>
-                    <span>المستخدمين</span>
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/orders" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/orders' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>الطلبات</span>
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/reports" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/reports' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>التقارير</span>
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/profile" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/profile' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>الملف الشخصي</span>
-                  </router-link>
-                </li>
-                <li>
-                  <button @click="logout" class="w-full flex items-center px-4 py-3 hover:bg-sky-700 transition-colors text-left">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>تسجيل الخروج</span>
-                  </button>
-                </li>
-              </ul>
-            </nav>
+            <SidebarMenu :user="user" mobile @item-click="toggleSidebar" />
           </div>
         </div>
         
@@ -220,10 +89,30 @@
               <table class="w-full">
                 <thead>
                   <tr class="bg-gray-50">
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الاسم</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">البريد الإلكتروني</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الدور</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('name')">
+                      الاسم
+                      <span v-if="sortField === 'name'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('email')">
+                      البريد الإلكتروني
+                      <span v-if="sortField === 'email'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('role')">
+                      الدور
+                      <span v-if="sortField === 'role'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('status')">
+                      الحالة
+                      <span v-if="sortField === 'status'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
                   </tr>
                 </thead>
@@ -249,16 +138,6 @@
                           </svg>
                         </button>
                         <button 
-                          @click="resetPassword(user)" 
-                          class="text-yellow-600 hover:text-yellow-800"
-                          title="إعادة تعيين كلمة المرور"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                          </svg>
-                        </button>
-                        <button 
-                          v-if="canDeleteUser(user)" 
                           @click="confirmDeleteUser(user)" 
                           class="text-red-600 hover:text-red-800"
                           title="حذف"
@@ -278,129 +157,185 @@
       </div>
     </div>
     
-    <!-- نافذة إضافة/تعديل مستخدم -->
-    <div v-if="showUserModal" class="fixed inset-0 z-30 overflow-y-auto">
+    <!-- نافذة إضافة مستخدم جديد -->
+    <div v-if="showAddUserModal" class="fixed inset-0 z-30 overflow-y-auto">
       <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 transition-opacity" @click="closeUserModal">
+        <div class="fixed inset-0 transition-opacity" @click="closeAddUserModal">
           <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
         
         <div class="inline-block align-bottom bg-white rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="mb-4">
-              <h3 class="text-lg font-medium text-gray-900">{{ isEditing ? 'تعديل مستخدم' : 'إضافة مستخدم جديد' }}</h3>
+            <div class="sm:flex sm:items-start">
+              <div class="mt-3 text-center sm:mt-0 sm:mr-4 sm:text-right w-full">
+                <h3 class="text-lg font-medium text-gray-900">إضافة مستخدم جديد</h3>
+                <div class="mt-4">
+                  <form @submit.prevent="addUser">
+                    <div class="mb-4">
+                      <label for="name" class="form-label">الاسم <span class="text-red-500">*</span></label>
+                      <input 
+                        type="text" 
+                        id="name" 
+                        v-model="newUser.name" 
+                        class="form-input" 
+                        required
+                      />
+                    </div>
+                    
+                    <div class="mb-4">
+                      <label for="email" class="form-label">البريد الإلكتروني <span class="text-red-500">*</span></label>
+                      <input 
+                        type="email" 
+                        id="email" 
+                        v-model="newUser.email" 
+                        class="form-input" 
+                        required
+                      />
+                    </div>
+                    
+                    <div class="mb-4">
+                      <label for="password" class="form-label">كلمة المرور <span class="text-red-500">*</span></label>
+                      <input 
+                        type="password" 
+                        id="password" 
+                        v-model="newUser.password" 
+                        class="form-input" 
+                        required
+                      />
+                    </div>
+                    
+                    <div class="mb-4">
+                      <label for="phone" class="form-label">رقم الهاتف</label>
+                      <input 
+                        type="text" 
+                        id="phone" 
+                        v-model="newUser.phone" 
+                        class="form-input"
+                      />
+                    </div>
+                    
+                    <div class="mb-4">
+                      <label for="role" class="form-label">الدور <span class="text-red-500">*</span></label>
+                      <select 
+                        id="role" 
+                        v-model="newUser.role" 
+                        class="form-input" 
+                        required
+                      >
+                        <option value="admin">مدير</option>
+                        <option value="sales_manager">مدير مبيعات</option>
+                        <option value="sales_rep">مندوب مبيعات</option>
+                      </select>
+                    </div>
+                    
+                    <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                      <button 
+                        type="submit" 
+                        class="btn btn-primary w-full sm:w-auto sm:mr-3" 
+                        :disabled="submitting"
+                      >
+                        <span v-if="submitting">جاري الإضافة...</span>
+                        <span v-else>إضافة</span>
+                      </button>
+                      <button 
+                        type="button" 
+                        class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 mt-3 w-full sm:mt-0 sm:w-auto" 
+                        @click="closeAddUserModal"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             </div>
-            
-            <form @submit.prevent="saveUser">
-              <div class="form-group">
-                <label for="name" class="form-label">الاسم</label>
-                <input 
-                  type="text" 
-                  id="name" 
-                  v-model="userForm.name" 
-                  class="form-input" 
-                  placeholder="أدخل الاسم" 
-                  required
-                />
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- نافذة تعديل مستخدم -->
+    <div v-if="showEditUserModal" class="fixed inset-0 z-30 overflow-y-auto">
+      <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" @click="closeEditUserModal">
+          <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        
+        <div class="inline-block align-bottom bg-white rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="sm:flex sm:items-start">
+              <div class="mt-3 text-center sm:mt-0 sm:mr-4 sm:text-right w-full">
+                <h3 class="text-lg font-medium text-gray-900">تعديل المستخدم</h3>
+                <div class="mt-4">
+                  <form @submit.prevent="updateUser">
+                    <div class="mb-4">
+                      <label for="edit-name" class="form-label">الاسم <span class="text-red-500">*</span></label>
+                      <input 
+                        type="text" 
+                        id="edit-name" 
+                        v-model="editingUser.name" 
+                        class="form-input" 
+                        required
+                      />
+                    </div>
+                    
+                    <div class="mb-4">
+                      <label for="edit-email" class="form-label">البريد الإلكتروني <span class="text-red-500">*</span></label>
+                      <input 
+                        type="email" 
+                        id="edit-email" 
+                        v-model="editingUser.email" 
+                        class="form-input" 
+                        required
+                        disabled
+                      />
+                    </div>
+                    
+                    <div class="mb-4">
+                      <label for="edit-phone" class="form-label">رقم الهاتف</label>
+                      <input 
+                        type="text" 
+                        id="edit-phone" 
+                        v-model="editingUser.phone" 
+                        class="form-input"
+                      />
+                    </div>
+                    
+                    <div class="mb-4">
+                      <label for="edit-role" class="form-label">الدور <span class="text-red-500">*</span></label>
+                      <select 
+                        id="edit-role" 
+                        v-model="editingUser.role" 
+                        class="form-input" 
+                        required
+                      >
+                        <option value="admin">مدير</option>
+                        <option value="sales_manager">مدير مبيعات</option>
+                        <option value="sales_rep">مندوب مبيعات</option>
+                      </select>
+                    </div>
+                    
+                    <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                      <button 
+                        type="submit" 
+                        class="btn btn-primary w-full sm:w-auto sm:mr-3" 
+                        :disabled="submitting"
+                      >
+                        <span v-if="submitting">جاري الحفظ...</span>
+                        <span v-else>حفظ التغييرات</span>
+                      </button>
+                      <button 
+                        type="button" 
+                        class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 mt-3 w-full sm:mt-0 sm:w-auto" 
+                        @click="closeEditUserModal"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
-              
-              <div class="form-group">
-                <label for="email" class="form-label">البريد الإلكتروني</label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  v-model="userForm.email" 
-                  class="form-input" 
-                  placeholder="أدخل البريد الإلكتروني" 
-                  required
-                  :disabled="isEditing"
-                />
-              </div>
-              
-              <div v-if="!isEditing" class="form-group">
-                <label for="password" class="form-label">كلمة المرور</label>
-                <input 
-                  type="password" 
-                  id="password" 
-                  v-model="userForm.password" 
-                  class="form-input" 
-                  placeholder="أدخل كلمة المرور" 
-                  required
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="role" class="form-label">الدور</label>
-                <select 
-                  id="role" 
-                  v-model="userForm.role" 
-                  class="form-input" 
-                  required
-                  :disabled="!canChangeRole(userForm)"
-                >
-                  <option value="admin" v-if="currentUser.role === 'admin'">مدير عام</option>
-                  <option value="sales_manager">مدير مبيعات</option>
-                  <option value="representative">مندوب</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="phone" class="form-label">رقم الهاتف</label>
-                <input 
-                  type="text" 
-                  id="phone" 
-                  v-model="userForm.phone" 
-                  class="form-input" 
-                  placeholder="أدخل رقم الهاتف" 
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="address" class="form-label">العنوان</label>
-                <input 
-                  type="text" 
-                  id="address" 
-                  v-model="userForm.address" 
-                  class="form-input" 
-                  placeholder="أدخل العنوان" 
-                />
-              </div>
-              
-              <div class="form-group">
-                <label for="status" class="form-label">الحالة</label>
-                <select 
-                  id="status" 
-                  v-model="userForm.status" 
-                  class="form-input" 
-                  required
-                >
-                  <option value="active">نشط</option>
-                  <option value="inactive">غير نشط</option>
-                </select>
-              </div>
-              
-              <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center mb-4">
-                {{ errorMessage }}
-              </div>
-              
-              <div class="mt-6 flex justify-end space-x-3 space-x-reverse">
-                <button 
-                  type="button" 
-                  class="btn bg-gray-200 text-gray-800 hover:bg-gray-300" 
-                  @click="closeUserModal"
-                >
-                  إلغاء
-                </button>
-                <button 
-                  type="submit" 
-                  class="btn btn-primary" 
-                  :disabled="saving"
-                >
-                  <span v-if="saving">جاري الحفظ...</span>
-                  <span v-else>حفظ</span>
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
@@ -455,95 +390,87 @@
         </div>
       </div>
     </div>
-    
-    <!-- نافذة إعادة تعيين كلمة المرور -->
-    <div v-if="showResetModal" class="fixed inset-0 z-30 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 transition-opacity" @click="closeResetModal">
-          <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-        
-        <div class="inline-block align-bottom bg-white rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="mb-4">
-              <h3 class="text-lg font-medium text-gray-900">إعادة تعيين كلمة المرور</h3>
-            </div>
-            
-            <form @submit.prevent="submitResetPassword">
-              <div class="form-group">
-                <label for="new-password" class="form-label">كلمة المرور الجديدة</label>
-                <input 
-                  type="password" 
-                  id="new-password" 
-                  v-model="newPassword" 
-                  class="form-input" 
-                  placeholder="أدخل كلمة المرور الجديدة" 
-                  required
-                />
-              </div>
-              
-              <div v-if="resetErrorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center mb-4">
-                {{ resetErrorMessage }}
-              </div>
-              
-              <div class="mt-6 flex justify-end space-x-3 space-x-reverse">
-                <button 
-                  type="button" 
-                  class="btn bg-gray-200 text-gray-800 hover:bg-gray-300" 
-                  @click="closeResetModal"
-                >
-                  إلغاء
-                </button>
-                <button 
-                  type="submit" 
-                  class="btn btn-primary" 
-                  :disabled="resetting"
-                >
-                  <span v-if="resetting">جاري إعادة التعيين...</span>
-                  <span v-else>تعيين كلمة المرور</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { authService } from '@/services/auth.service'
+import SidebarMenu from '@/components/SidebarMenu.vue'
 
 export default {
   name: 'UsersView',
+  components: {
+    SidebarMenu
+  },
   setup() {
-    const router = useRouter()
     const showMobileSidebar = ref(false)
     const loading = ref(true)
     const users = ref([])
     const searchQuery = ref('')
+    const sortField = ref('name')
+    const sortDirection = ref('asc')
     
     // الحصول على بيانات المستخدم الحالي من التخزين المحلي
-    const currentUser = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+    const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
     
     // التحقق من صلاحيات المستخدم
     const isAdmin = computed(() => {
-      return ['admin', 'sales_manager'].includes(currentUser.value.role)
+      return ['admin', 'sales_manager'].includes(user.value.role)
     })
     
     // تصفية المستخدمين حسب البحث
     const filteredUsers = computed(() => {
-      if (!searchQuery.value) return users.value
+      let result = users.value
       
-      const query = searchQuery.value.toLowerCase()
-      return users.value.filter(user => 
-        user.name.toLowerCase().includes(query) || 
-        user.email.toLowerCase().includes(query) ||
-        getRoleName(user.role).toLowerCase().includes(query)
-      )
+      // تصفية حسب البحث
+      if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase()
+        result = result.filter(user => 
+          user.name.toLowerCase().includes(query) || 
+          user.email.toLowerCase().includes(query) ||
+          getRoleName(user.role).toLowerCase().includes(query)
+        )
+      }
+      
+      // فرز النتائج
+      result = [...result].sort((a, b) => {
+        let valA, valB;
+        
+        // تحديد قيم المقارنة بناءً على حقل الفرز
+        switch (sortField.value) {
+          case 'name':
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+            break;
+          case 'email':
+            valA = a.email.toLowerCase();
+            valB = b.email.toLowerCase();
+            break;
+          case 'role':
+            valA = a.role;
+            valB = b.role;
+            break;
+          case 'status':
+            valA = a.status;
+            valB = b.status;
+            break;
+          default:
+            valA = a.name.toLowerCase();
+            valB = b.name.toLowerCase();
+            break;
+        }
+        
+        // تطبيق اتجاه الفرز
+        if (sortDirection.value === 'asc') {
+          return valA > valB ? 1 : valA < valB ? -1 : 0;
+        } else {
+          return valA < valB ? 1 : valA > valB ? -1 : 0;
+        }
+      });
+      
+      return result;
     })
     
     // تبديل حالة القائمة الجانبية للجوال
@@ -551,58 +478,30 @@ export default {
       showMobileSidebar.value = !showMobileSidebar.value
     }
     
-    // تسجيل الخروج
-    const logout = async () => {
-      try {
-        await authService.logout()
-        localStorage.removeItem('user')
-        router.push({ name: 'login' })
-      } catch (error) {
-        console.error('خطأ في تسجيل الخروج:', error)
+    // تغيير حقل الفرز
+    const sortBy = (field) => {
+      // إذا كان نفس الحقل، نعكس الاتجاه
+      if (sortField.value === field) {
+        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+      } else {
+        // إذا كان حقل جديد، نعين الحقل ونبدأ بالترتيب التصاعدي
+        sortField.value = field
+        sortDirection.value = 'asc'
       }
     }
     
-    // الحصول على اسم الدور
-    const getRoleName = (role) => {
-      const roleMap = {
-        'admin': 'مدير عام',
-        'sales_manager': 'مدير مبيعات',
-        'representative': 'مندوب'
-      }
-      return roleMap[role] || role
-    }
-    
-    // الحصول على اسم الحالة
-    const getStatusName = (status) => {
-      const statusMap = {
-        'active': 'نشط',
-        'inactive': 'غير نشط'
-      }
-      return statusMap[status] || status
-    }
-    
-    // الحصول على فئة CSS للحالة
-    const getStatusClass = (status) => {
-      const statusClassMap = {
-        'active': 'bg-green-100 text-green-800',
-        'inactive': 'bg-red-100 text-red-800'
-      }
-      return statusClassMap[status] || 'bg-gray-100 text-gray-800'
-    }
-    
-    // جلب المستخدمين
+    // جلب المستخدمين من قاعدة البيانات
     const fetchUsers = async () => {
+      loading.value = true
+      
       try {
-        loading.value = true
-        
         const { data, error } = await supabase
           .from('users')
           .select('*')
-          .order('created_at', { ascending: false })
         
         if (error) throw error
         
-        users.value = data || []
+        users.value = data
       } catch (error) {
         console.error('خطأ في جلب المستخدمين:', error)
       } finally {
@@ -610,262 +509,260 @@ export default {
       }
     }
     
-    // متغيرات نافذة إضافة/تعديل مستخدم
-    const showUserModal = ref(false)
-    const isEditing = ref(false)
-    const userForm = ref({
-      id: null,
+    // الحصول على اسم الدور
+    const getRoleName = (role) => {
+      switch (role) {
+        case 'admin':
+          return 'مدير'
+        case 'sales_manager':
+          return 'مدير مبيعات'
+        case 'sales_rep':
+          return 'مندوب مبيعات'
+        default:
+          return role
+      }
+    }
+    
+    // الحصول على اسم الحالة
+    const getStatusName = (status) => {
+      switch (status) {
+        case 'active':
+          return 'نشط'
+        case 'inactive':
+          return 'غير نشط'
+        case 'pending':
+          return 'معلق'
+        default:
+          return status
+      }
+    }
+    
+    // الحصول على فئة CSS للحالة
+    const getStatusClass = (status) => {
+      switch (status) {
+        case 'active':
+          return 'bg-green-100 text-green-800'
+        case 'inactive':
+          return 'bg-red-100 text-red-800'
+        case 'pending':
+          return 'bg-yellow-100 text-yellow-800'
+        default:
+          return 'bg-gray-100 text-gray-800'
+      }
+    }
+    
+    // تسجيل الخروج
+    const logout = async () => {
+      try {
+        await authService.logout()
+      } catch (error) {
+        console.error('خطأ في تسجيل الخروج:', error)
+      }
+    }
+    
+    // متغيرات إضافة مستخدم جديد
+    const showAddUserModal = ref(false)
+    const submitting = ref(false)
+    const newUser = ref({
       name: '',
       email: '',
       password: '',
-      role: 'representative',
       phone: '',
-      address: '',
-      status: 'active'
+      role: 'sales_rep'
     })
-    const saving = ref(false)
-    const errorMessage = ref('')
     
     // فتح نافذة إضافة مستخدم جديد
     const openAddUserModal = () => {
-      isEditing.value = false
-      userForm.value = {
-        id: null,
+      // إعادة تعيين النموذج
+      newUser.value = {
         name: '',
         email: '',
         password: '',
-        role: 'representative',
         phone: '',
-        address: '',
-        status: 'active'
+        role: 'sales_rep'
       }
-      errorMessage.value = ''
-      showUserModal.value = true
+      
+      showAddUserModal.value = true
     }
     
-    // فتح نافذة تعديل مستخدم
-    const editUser = (user) => {
-      isEditing.value = true
-      userForm.value = { ...user }
-      errorMessage.value = ''
-      showUserModal.value = true
+    // إغلاق نافذة إضافة مستخدم جديد
+    const closeAddUserModal = () => {
+      showAddUserModal.value = false
     }
     
-    // إغلاق نافذة المستخدم
-    const closeUserModal = () => {
-      showUserModal.value = false
-    }
-    
-    // حفظ المستخدم
-    const saveUser = async () => {
+    // إضافة مستخدم جديد
+    const addUser = async () => {
+      submitting.value = true
+      
       try {
-        saving.value = true
-        errorMessage.value = ''
+        const result = await authService.createUser({
+          name: newUser.value.name,
+          email: newUser.value.email,
+          password: newUser.value.password,
+          phone: newUser.value.phone,
+          role: newUser.value.role
+        })
         
-        if (isEditing.value) {
-          // تحديث المستخدم
-          const { error } = await authService.updateUser(userForm.value.id, {
-            name: userForm.value.name,
-            role: userForm.value.role,
-            phone: userForm.value.phone,
-            address: userForm.value.address,
-            status: userForm.value.status
-          })
-          
-          if (error) throw error
-        } else {
-          // إنشاء مستخدم جديد
-          const { error } = await authService.createUser(
-            userForm.value.email,
-            userForm.value.password,
-            {
-              name: userForm.value.name,
-              role: userForm.value.role,
-              phone: userForm.value.phone,
-              address: userForm.value.address,
-              status: userForm.value.status
-            }
-          )
-          
-          if (error) throw error
-        }
+        if (result.error) throw result.error
         
-        // إعادة تحميل المستخدمين
+        // إغلاق النافذة وإعادة تحميل المستخدمين
+        closeAddUserModal()
         await fetchUsers()
-        
-        // إغلاق النافذة
-        closeUserModal()
       } catch (error) {
-        console.error('خطأ في حفظ المستخدم:', error)
-        errorMessage.value = `خطأ في حفظ المستخدم: ${error.message}`
+        console.error('خطأ في إضافة المستخدم:', error)
+        alert('حدث خطأ أثناء إضافة المستخدم. يرجى المحاولة مرة أخرى.')
       } finally {
-        saving.value = false
+        submitting.value = false
       }
     }
     
-    // متغيرات نافذة تأكيد الحذف
-    const showDeleteModal = ref(false)
-    const userToDelete = ref(null)
-    const deleting = ref(false)
+    // متغيرات تعديل المستخدم
+    const showEditUserModal = ref(false)
+    const editingUser = ref({
+      id: null,
+      name: '',
+      email: '',
+      phone: '',
+      role: ''
+    })
     
-    // التحقق من إمكانية حذف المستخدم
-    const canDeleteUser = (user) => {
-      // المدير العام لا يمكن حذفه
-      if (user.role === 'admin') return false
-      
-      // مدير المبيعات لا يمكنه حذف مدير آخر
-      if (user.role === 'sales_manager' && currentUser.value.role === 'sales_manager') return false
-      
-      return true
+    // فتح نافذة تعديل المستخدم
+    const editUser = (userToEdit) => {
+      editingUser.value = { ...userToEdit }
+      showEditUserModal.value = true
     }
+    
+    // إغلاق نافذة تعديل المستخدم
+    const closeEditUserModal = () => {
+      showEditUserModal.value = false
+    }
+    
+    // تحديث المستخدم
+    const updateUser = async () => {
+      submitting.value = true
+      
+      try {
+        const { error } = await supabase
+          .from('users')
+          .update({
+            name: editingUser.value.name,
+            phone: editingUser.value.phone,
+            role: editingUser.value.role
+          })
+          .eq('id', editingUser.value.id)
+        
+        if (error) throw error
+        
+        // إغلاق النافذة وإعادة تحميل المستخدمين
+        closeEditUserModal()
+        await fetchUsers()
+      } catch (error) {
+        console.error('خطأ في تحديث المستخدم:', error)
+        alert('حدث خطأ أثناء تحديث المستخدم. يرجى المحاولة مرة أخرى.')
+      } finally {
+        submitting.value = false
+      }
+    }
+    
+    // متغيرات حذف المستخدم
+    const showDeleteModal = ref(false)
+    const deleting = ref(false)
+    const userToDelete = ref(null)
     
     // فتح نافذة تأكيد الحذف
-    const confirmDeleteUser = (user) => {
-      userToDelete.value = user
+    const confirmDeleteUser = (userToConfirmDelete) => {
+      userToDelete.value = userToConfirmDelete
       showDeleteModal.value = true
     }
     
     // إغلاق نافذة تأكيد الحذف
     const closeDeleteModal = () => {
       showDeleteModal.value = false
-      userToDelete.value = null
     }
     
     // حذف المستخدم
     const deleteUser = async () => {
       if (!userToDelete.value) return
       
+      deleting.value = true
+      
       try {
-        deleting.value = true
+        const result = await authService.deleteUser(userToDelete.value.id)
         
-        const { error } = await authService.deleteUser(userToDelete.value.id)
+        if (result.error) throw result.error
         
-        if (error) throw error
-        
-        // إعادة تحميل المستخدمين
-        await fetchUsers()
-        
-        // إغلاق النافذة
+        // إغلاق النافذة وإعادة تحميل المستخدمين
         closeDeleteModal()
+        await fetchUsers()
       } catch (error) {
         console.error('خطأ في حذف المستخدم:', error)
-        alert(`خطأ في حذف المستخدم: ${error.message}`)
+        alert('حدث خطأ أثناء حذف المستخدم. يرجى المحاولة مرة أخرى.')
       } finally {
         deleting.value = false
       }
     }
     
-    // متغيرات نافذة إعادة تعيين كلمة المرور
-    const showResetModal = ref(false)
-    const userToReset = ref(null)
-    const newPassword = ref('')
-    const resetting = ref(false)
-    const resetErrorMessage = ref('')
-    
-    // فتح نافذة إعادة تعيين كلمة المرور
-    const resetPassword = (user) => {
-      userToReset.value = user
-      newPassword.value = ''
-      resetErrorMessage.value = ''
-      showResetModal.value = true
-    }
-    
-    // إغلاق نافذة إعادة تعيين كلمة المرور
-    const closeResetModal = () => {
-      showResetModal.value = false
-      userToReset.value = null
-    }
-    
-    // إعادة تعيين كلمة المرور
-    const submitResetPassword = async () => {
-      if (!userToReset.value) return
-      
-      try {
-        resetting.value = true
-        resetErrorMessage.value = ''
-        
-        // إعادة تعيين كلمة المرور
-        const { error } = await supabase.auth.admin.updateUserById(
-          userToReset.value.id,
-          { password: newPassword.value }
-        )
-        
-        if (error) throw error
-        
-        // إغلاق النافذة
-        closeResetModal()
-        
-        // إظهار رسالة نجاح
-        alert('تم إعادة تعيين كلمة المرور بنجاح')
-      } catch (error) {
-        console.error('خطأ في إعادة تعيين كلمة المرور:', error)
-        resetErrorMessage.value = `خطأ في إعادة تعيين كلمة المرور: ${error.message}`
-      } finally {
-        resetting.value = false
-      }
-    }
-    
-    // التحقق من إمكانية تغيير دور المستخدم
-    const canChangeRole = (user) => {
-      // المدير العام فقط يمكنه تعيين مدير عام آخر
-      if (user.role === 'admin' && currentUser.value.role !== 'admin') return false
-      
-      // لا يمكن تغيير دور المستخدم الحالي
-      if (user.id === currentUser.value.id) return false
-      
-      return true
-    }
-    
+    // تهيئة الصفحة
     onMounted(() => {
       fetchUsers()
     })
     
     return {
-      currentUser,
-      user: currentUser,
+      user,
       isAdmin,
       showMobileSidebar,
       toggleSidebar,
-      logout,
       loading,
       users,
       searchQuery,
       filteredUsers,
+      sortField,
+      sortDirection,
+      sortBy,
       getRoleName,
       getStatusName,
       getStatusClass,
-      
-      // إضافة/تعديل مستخدم
-      showUserModal,
-      isEditing,
-      userForm,
-      saving,
-      errorMessage,
+      logout,
+      showAddUserModal,
+      submitting,
+      newUser,
       openAddUserModal,
+      closeAddUserModal,
+      addUser,
+      showEditUserModal,
+      editingUser,
       editUser,
-      closeUserModal,
-      saveUser,
-      canChangeRole,
-      
-      // حذف مستخدم
+      closeEditUserModal,
+      updateUser,
       showDeleteModal,
-      userToDelete,
       deleting,
-      canDeleteUser,
+      userToDelete,
       confirmDeleteUser,
       closeDeleteModal,
-      deleteUser,
-      
-      // إعادة تعيين كلمة المرور
-      showResetModal,
-      userToReset,
-      newPassword,
-      resetting,
-      resetErrorMessage,
-      resetPassword,
-      closeResetModal,
-      submitResetPassword
+      deleteUser
     }
   }
 }
 </script>
+
+<style scoped>
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.form-input {
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm;
+}
+
+.btn {
+  @apply inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+}
+</style>

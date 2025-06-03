@@ -432,11 +432,46 @@ export default {
     }
     
     // إنشاء فاتورة
-    const generateInvoice = () => {
+    const generateInvoice = async () => {
       if (!order.value) return
       
-      // هنا يمكن إضافة كود لإنشاء فاتورة PDF أو طباعة الفاتورة
-      alert('سيتم إضافة ميزة إنشاء الفاتورة قريباً')
+      try {
+        // جلب منتجات الطلب
+        const { data: productsData, error: productsError } = await supabase
+          .from('order_products')
+          .select('*')
+          .eq('order_id', order.value.id)
+        
+        if (productsError) throw productsError
+        
+        let products = [];
+        
+        if (productsData && productsData.length > 0) {
+          // استخدام المنتجات من الجدول الجديد
+          products = productsData;
+        } else {
+          // استخدام البيانات القديمة إذا لم تكن هناك منتجات في الجدول الجديد
+          products = [{
+            description: order.value.product_description,
+            notes: '',
+            quantity: order.value.quantity,
+            unit_price: order.value.unit_price,
+            subtotal: order.value.subtotal
+          }];
+        }
+        
+        // استيراد منشئ الفاتورة
+        const { generateInvoice } = await import('@/utils/invoiceGenerator');
+        
+        // إنشاء الفاتورة
+        const doc = generateInvoice(order.value, products, salesRep.value);
+        
+        // حفظ الفاتورة
+        doc.save(`فاتورة_${order.value.id}.pdf`);
+      } catch (error) {
+        console.error('خطأ في إنشاء الفاتورة:', error);
+        alert('حدث خطأ أثناء إنشاء الفاتورة. يرجى المحاولة مرة أخرى.');
+      }
     }
     
     // فتح نافذة تأكيد الحذف
