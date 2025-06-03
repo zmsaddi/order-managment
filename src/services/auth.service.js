@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import { config } from '@/config.js'
 
-// إنشاء عميل Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
+// إنشاء عميل Supabase باستخدام القيم من ملف config.js
+const supabaseUrl = config.supabaseUrl
+const supabaseKey = config.supabaseKey
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // إنشاء خدمة المصادقة
