@@ -55,6 +55,10 @@ export const authService = {
 
         if (createError) throw createError
 
+        // تخزين بيانات المستخدم في localStorage
+        const userToStore = newUser;
+        localStorage.setItem('user', JSON.stringify(userToStore));
+
         return {
           user: newUser,
           session: data.session
@@ -63,6 +67,9 @@ export const authService = {
         throw userError
       }
     }
+
+    // تخزين بيانات المستخدم في localStorage
+    localStorage.setItem('user', JSON.stringify(userData));
 
     return {
       user: userData,
@@ -74,6 +81,9 @@ export const authService = {
   async logout() {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
+    
+    // إزالة بيانات المستخدم من localStorage
+    localStorage.removeItem('user');
   },
 
   // إنشاء مستخدم جديد
@@ -122,9 +132,6 @@ export const authService = {
 
       if (userError) throw userError
 
-      // إزالة محاولة تفعيل المستخدم تلقائياً لأن وظيفة RPC غير متوفرة
-      // تم إزالة استدعاء confirm_user لأنه يسبب خطأ 404
-
       // تحديث قائمة المستخدمين في الواجهة
       return {
         user: newUser
@@ -162,6 +169,11 @@ export const authService = {
 
     if (error) throw error
 
+    // تحديث بيانات المستخدم في localStorage إذا كان المستخدم الحالي
+    if (currentUser.id === userId) {
+      localStorage.setItem('user', JSON.stringify(data));
+    }
+
     return {
       user: data
     }
@@ -195,8 +207,6 @@ export const authService = {
     }
 
     // حذف سجل المستخدم من جدول المستخدمين فقط
-    // ملاحظة: لا يمكننا حذف المستخدم من نظام المصادقة لأننا لا نملك صلاحيات admin
-    // يجب حذف المستخدم يدوياً من لوحة تحكم Supabase إذا لزم الأمر
     const { error } = await supabase
       .from('users')
       .delete()
@@ -276,6 +286,9 @@ export const authService = {
       return { user: null, session: null }
     }
 
+    // تحديث بيانات المستخدم في localStorage
+    localStorage.setItem('user', JSON.stringify(userData));
+
     return {
       user: userData,
       session
@@ -325,6 +338,9 @@ export const authService = {
       await supabase.auth.admin.deleteUser(data.user.id)
       throw userError
     }
+
+    // تخزين بيانات المستخدم في localStorage
+    localStorage.setItem('user', JSON.stringify(newUser));
 
     return {
       success: true,
