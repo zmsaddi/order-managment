@@ -133,36 +133,11 @@
               <table class="w-full">
                 <thead>
                   <tr class="bg-gray-50">
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('id')">
-                      رقم الطلب
-                      <span v-if="sortField === 'id'" class="mr-1">
-                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                      </span>
-                    </th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('customer_name')">
-                      العميل
-                      <span v-if="sortField === 'customer_name'" class="mr-1">
-                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                      </span>
-                    </th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('total')">
-                      المبلغ
-                      <span v-if="sortField === 'total'" class="mr-1">
-                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                      </span>
-                    </th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('status')">
-                      الحالة
-                      <span v-if="sortField === 'status'" class="mr-1">
-                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                      </span>
-                    </th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('created_at')">
-                      التاريخ
-                      <span v-if="sortField === 'created_at'" class="mr-1">
-                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                      </span>
-                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم الطلب</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
                     <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
                   </tr>
                 </thead>
@@ -305,8 +280,6 @@ export default {
     const statusFilter = ref('')
     const dateFrom = ref('')
     const dateTo = ref('')
-    const sortField = ref('created_at')
-    const sortDirection = ref('desc')
     
     // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
@@ -347,61 +320,12 @@ export default {
         result = result.filter(order => new Date(order.created_at) <= toDate)
       }
       
-      // فرز النتائج
-      result = [...result].sort((a, b) => {
-        let valA, valB;
-        
-        // تحديد قيم المقارنة بناءً على حقل الفرز
-        switch (sortField.value) {
-          case 'id':
-            valA = a.id;
-            valB = b.id;
-            break;
-          case 'customer_name':
-            valA = a.customer_name.toLowerCase();
-            valB = b.customer_name.toLowerCase();
-            break;
-          case 'total':
-            valA = parseFloat(a.total);
-            valB = parseFloat(b.total);
-            break;
-          case 'status':
-            valA = a.status;
-            valB = b.status;
-            break;
-          case 'created_at':
-          default:
-            valA = new Date(a.created_at).getTime();
-            valB = new Date(b.created_at).getTime();
-            break;
-        }
-        
-        // تطبيق اتجاه الفرز
-        if (sortDirection.value === 'asc') {
-          return valA > valB ? 1 : valA < valB ? -1 : 0;
-        } else {
-          return valA < valB ? 1 : valA > valB ? -1 : 0;
-        }
-      });
-      
-      return result;
+      return result
     })
     
     // تبديل حالة القائمة الجانبية للجوال
     const toggleSidebar = () => {
       showMobileSidebar.value = !showMobileSidebar.value
-    }
-    
-    // تغيير حقل الفرز
-    const sortBy = (field) => {
-      // إذا كان نفس الحقل، نعكس الاتجاه
-      if (sortField.value === field) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-      } else {
-        // إذا كان حقل جديد، نعين الحقل ونبدأ بالترتيب التنازلي
-        sortField.value = field
-        sortDirection.value = 'desc'
-      }
     }
     
     // جلب الطلبات من قاعدة البيانات

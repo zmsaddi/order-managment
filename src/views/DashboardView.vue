@@ -21,13 +21,27 @@
             <div class="flex items-center">
               <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
               <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
-                {{ user.name ? user.name.charAt(0) : 'U' }}
+                {{ user.name.charAt(0) }}
               </div>
             </div>
           </div>
         </header>
         
-        <!-- تم إزالة القائمة الجانبية للجوال من هنا لأنها موجودة الآن في مكون SidebarMenu.vue -->
+        <!-- القائمة الجانبية للجوال -->
+        <div v-if="showMobileSidebar" class="fixed inset-0 z-20 md:hidden">
+          <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
+          <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
+            <div class="p-4 border-b border-sky-700 flex justify-between items-center">
+              <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
+              <button @click="toggleSidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <SidebarMenu :user="user" mobile @item-click="toggleSidebar" />
+          </div>
+        </div>
         
         <!-- محتوى الصفحة -->
         <main class="flex-1 overflow-y-auto p-4">
@@ -90,125 +104,50 @@
           </div>
           
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- الطلبات حسب الحالة -->
+            <!-- الطلبات الأخيرة -->
             <div class="card bg-white rounded-lg shadow-sm">
               <div class="border-b border-gray-200 p-4">
-                <h2 class="text-lg font-semibold text-gray-800">الطلبات حسب الحالة</h2>
+                <h2 class="text-lg font-semibold text-gray-800">الطلبات الأخيرة</h2>
               </div>
               <div class="p-4">
                 <div v-if="loading" class="text-center py-4">
                   <p>جاري تحميل البيانات...</p>
                 </div>
-                <div v-else>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- الطلبات الجديدة -->
-                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-semibold text-yellow-800">طلبات جديدة</h3>
-                        <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.new ? ordersByStatus.new.length : 0 }}</span>
-                      </div>
-                      <div v-if="!ordersByStatus.new || ordersByStatus.new.length === 0" class="text-center py-2 text-sm text-gray-500">
-                        لا توجد طلبات
-                      </div>
-                      <div v-else class="space-y-2">
-                        <div v-for="order in ordersByStatus.new.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-yellow-200 text-sm">
-                          <div class="flex justify-between">
-                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ String(order.id).substring(0, 8) }}
-                            </router-link>
-                            <span>{{ formatCurrency(order.total) }}</span>
-                          </div>
-                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
-                        </div>
-                        <div v-if="ordersByStatus.new && ordersByStatus.new.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
-                          <router-link :to="{ path: '/orders', query: { status: 'new' } }">
-                            عرض {{ ordersByStatus.new.length - 3 }} طلبات أخرى
+                <div v-else-if="recentOrders.length === 0" class="text-center py-4">
+                  <p>لا توجد طلبات حديثة</p>
+                </div>
+                <div v-else class="overflow-x-auto">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="bg-gray-50">
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم الطلب</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      <tr v-for="order in recentOrders" :key="order.id" class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap">
+                          <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900">
+                            #{{ order.id.substring(0, 8) }}
                           </router-link>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- الطلبات المكتملة بانتظار التسليم -->
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-semibold text-blue-800">بانتظار التسليم</h3>
-                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.completed_pending_delivery ? ordersByStatus.completed_pending_delivery.length : 0 }}</span>
-                      </div>
-                      <div v-if="!ordersByStatus.completed_pending_delivery || ordersByStatus.completed_pending_delivery.length === 0" class="text-center py-2 text-sm text-gray-500">
-                        لا توجد طلبات
-                      </div>
-                      <div v-else class="space-y-2">
-                        <div v-for="order in ordersByStatus.completed_pending_delivery.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-blue-200 text-sm">
-                          <div class="flex justify-between">
-                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ String(order.id).substring(0, 8) }}
-                            </router-link>
-                            <span>{{ formatCurrency(order.total) }}</span>
-                          </div>
-                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
-                        </div>
-                        <div v-if="ordersByStatus.completed_pending_delivery && ordersByStatus.completed_pending_delivery.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
-                          <router-link :to="{ path: '/orders', query: { status: 'completed_pending_delivery' } }">
-                            عرض {{ ordersByStatus.completed_pending_delivery.length - 3 }} طلبات أخرى
-                          </router-link>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- الطلبات المسلمة -->
-                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-semibold text-green-800">تم التسليم</h3>
-                        <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.delivered ? ordersByStatus.delivered.length : 0 }}</span>
-                      </div>
-                      <div v-if="!ordersByStatus.delivered || ordersByStatus.delivered.length === 0" class="text-center py-2 text-sm text-gray-500">
-                        لا توجد طلبات
-                      </div>
-                      <div v-else class="space-y-2">
-                        <div v-for="order in ordersByStatus.delivered.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-green-200 text-sm">
-                          <div class="flex justify-between">
-                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ String(order.id).substring(0, 8) }}
-                            </router-link>
-                            <span>{{ formatCurrency(order.total) }}</span>
-                          </div>
-                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
-                        </div>
-                        <div v-if="ordersByStatus.delivered && ordersByStatus.delivered.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
-                          <router-link :to="{ path: '/orders', query: { status: 'delivered' } }">
-                            عرض {{ ordersByStatus.delivered.length - 3 }} طلبات أخرى
-                          </router-link>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- الطلبات الملغاة -->
-                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-semibold text-red-800">ملغاة</h3>
-                        <span class="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.cancelled ? ordersByStatus.cancelled.length : 0 }}</span>
-                      </div>
-                      <div v-if="!ordersByStatus.cancelled || ordersByStatus.cancelled.length === 0" class="text-center py-2 text-sm text-gray-500">
-                        لا توجد طلبات
-                      </div>
-                      <div v-else class="space-y-2">
-                        <div v-for="order in ordersByStatus.cancelled.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-red-200 text-sm">
-                          <div class="flex justify-between">
-                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ String(order.id).substring(0, 8) }}
-                            </router-link>
-                            <span>{{ formatCurrency(order.total) }}</span>
-                          </div>
-                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
-                        </div>
-                        <div v-if="ordersByStatus.cancelled && ordersByStatus.cancelled.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
-                          <router-link :to="{ path: '/orders', query: { status: 'cancelled' } }">
-                            عرض {{ ordersByStatus.cancelled.length - 3 }} طلبات أخرى
-                          </router-link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                        </td>
+                        <td class="px-4 py-2 whitespace-nowrap">{{ order.customer_name }}</td>
+                        <td class="px-4 py-2 whitespace-nowrap">{{ formatCurrency(order.total) }}</td>
+                        <td class="px-4 py-2 whitespace-nowrap">
+                          <span :class="getStatusClass(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                            {{ getStatusText(order.status) }}
+                          </span>
+                        </td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{{ formatDate(order.created_at) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mt-4 text-center">
+                  <router-link to="/orders" class="text-sky-600 hover:text-sky-900">عرض جميع الطلبات</router-link>
                 </div>
               </div>
             </div>
@@ -324,14 +263,6 @@ export default {
       return statusClassMap[status] || 'bg-gray-100 text-gray-800'
     }
     
-    // متغيرات الطلبات حسب الحالة
-    const ordersByStatus = ref({
-      new: [],
-      completed_pending_delivery: [],
-      delivered: [],
-      cancelled: []
-    })
-    
     // جلب الطلبات الأخيرة
     const fetchRecentOrders = async () => {
       try {
@@ -339,46 +270,13 @@ export default {
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(10)
+          .limit(5)
         
         if (error) throw error
         
-        recentOrders.value = data || []
-        
-        // تحديث الطلبات حسب الحالة
-        await fetchOrdersByStatus()
+        recentOrders.value = data
       } catch (error) {
         console.error('خطأ في جلب الطلبات الأخيرة:', error)
-        recentOrders.value = []
-      }
-    }
-    
-    // جلب الطلبات حسب الحالة
-    const fetchOrdersByStatus = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false })
-        
-        if (error) throw error
-        
-        // تصنيف الطلبات حسب الحالة
-        ordersByStatus.value = {
-          new: data.filter(order => order.status === 'new') || [],
-          completed_pending_delivery: data.filter(order => order.status === 'completed_pending_delivery') || [],
-          delivered: data.filter(order => order.status === 'delivered') || [],
-          cancelled: data.filter(order => order.status === 'cancelled') || []
-        }
-      } catch (error) {
-        console.error('خطأ في جلب الطلبات حسب الحالة:', error)
-        // تهيئة القيم الافتراضية في حالة الخطأ
-        ordersByStatus.value = {
-          new: [],
-          completed_pending_delivery: [],
-          delivered: [],
-          cancelled: []
-        }
       }
     }
     
@@ -451,17 +349,6 @@ export default {
         }
       } catch (error) {
         console.error('خطأ في جلب الإحصائيات:', error)
-        // تهيئة القيم الافتراضية في حالة الخطأ
-        stats.value = {
-          totalOrders: 0,
-          newOrders: 0,
-          completedOrders: 0,
-          totalSales: 0,
-          monthlySales: 0,
-          averageOrderValue: 0,
-          highestOrderValue: 0,
-          newOrdersPercentage: 0
-        }
       }
     }
     
@@ -485,8 +372,6 @@ export default {
           fetchRecentOrders(),
           fetchStats()
         ])
-      } catch (error) {
-        console.error('خطأ في تهيئة الصفحة:', error)
       } finally {
         loading.value = false
       }
@@ -500,7 +385,6 @@ export default {
       loading,
       recentOrders,
       stats,
-      ordersByStatus,
       getStatusText,
       getStatusClass,
       logout,

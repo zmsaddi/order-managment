@@ -76,7 +76,7 @@ export const authService = {
   },
 
   // إنشاء مستخدم جديد
-  async createUser(userData) {
+  async createUser(email, password, userData) {
     // التحقق من صلاحيات المستخدم الحالي
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     if (!['admin', 'sales_manager'].includes(currentUser.role)) {
@@ -84,36 +84,68 @@ export const authService = {
     }
 
     try {
-      const email = userData.email;
-      const password = userData.password;
-      
-      // استخدام signUp مباشرة لإنشاء المستخدم
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      // محاولة استخدام admin.createUser أولاً إذا كان متاحاً (في بيئة الخادم)
+      const { data, error } = await supabase.auth.admin.createUser({
         email,
         password,
-        options: {
-          data: {
-            name: userData.name,
-            role: userData.role,
-            email: email
-          }
-        }
+        email_confirm: true
       })
 
-      if (signUpError) throw signUpError
+      if (error) {
+        // إذا فشل admin.createUser، نستخدم signUp كبديل
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name: userData.name,
+              role: userData.role,
+              email: email
+            }
+          }
+        })
 
-      // إنشاء سجل المستخدم في جدول المستخدمين
+        if (signUpError) throw signUpError
+
+        // تفعيل المستخدم يدوياً عبر SQL (يعمل فقط إذا كان هناك trigger في قاعدة البيانات)
+        await supabase.rpc('confirm_user', { user_email: email })
+
+        // إنشاء سجل المستخدم في جدول المستخدمين
+        const { data: newUser, error: userError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: signUpData.user.id,
+              email: email,
+              name: userData.name,
+              role: userData.role,
+              phone: userData.phone,
+              address: userData.address,
+              status: userData.status
+            }
+          ])
+          .select()
+          .single()
+
+        if (userError) throw userError
+
+        return {
+          user: newUser
+        }
+      }
+
+      // إذا نجح admin.createUser، نستمر بالطريقة العادية
       const { data: newUser, error: userError } = await supabase
         .from('users')
         .insert([
           {
-            id: signUpData.user.id,
+            id: data.user.id,
             email: email,
             name: userData.name,
             role: userData.role,
             phone: userData.phone,
             address: userData.address,
-            status: userData.status || 'active'
+            status: userData.status
           }
         ])
         .select()
@@ -121,10 +153,6 @@ export const authService = {
 
       if (userError) throw userError
 
-      // إزالة محاولة تفعيل المستخدم تلقائياً لأن وظيفة RPC غير متوفرة
-      // تم إزالة استدعاء confirm_user لأنه يسبب خطأ 404
-
-      // تحديث قائمة المستخدمين في الواجهة
       return {
         user: newUser
       }
@@ -223,35 +251,6 @@ export const authService = {
     if (error) throw error
 
     return { success: true }
-  },
-  
-  // تحديث كلمة مرور المستخدم
-  async updateUserPassword(userId, newPassword) {
-    // التحقق من صلاحيات المستخدم الحالي
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
-      throw new Error('ليس لديك صلاحية لتحديث كلمات المرور')
-    }
-
-    // التحقق من طول كلمة المرور
-    if (newPassword.length < 6) {
-      throw new Error('يجب أن تكون كلمة المرور 6 أحرف على الأقل')
-    }
-
-    try {
-      // تحديث كلمة المرور باستخدام API المناسبة
-      const { error } = await supabase.auth.admin.updateUserById(
-        userId,
-        { password: newPassword }
-      )
-
-      if (error) throw error
-
-      return { success: true, error: null }
-    } catch (error) {
-      console.error('خطأ في تحديث كلمة المرور:', error)
-      return { success: false, error }
-    }
   },
 
   // التحقق من حالة المصادقة

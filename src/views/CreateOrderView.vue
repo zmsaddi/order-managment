@@ -61,8 +61,8 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- بيانات العميل -->
                 <div class="col-span-1 md:col-span-2">
-                  <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">بيانات العميل</h2>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">بيانات العميل</h2>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label for="customer_name" class="form-label">اسم العميل <span class="text-red-500">*</span></label>
                       <input 
@@ -98,208 +98,131 @@
                 
                 <!-- بيانات المنتج -->
                 <div class="col-span-1 md:col-span-2">
-                  <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">بيانات المنتجات</h2>
-                  
-                  <div v-for="(product, index) in products" :key="product.id" class="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div class="flex justify-between items-center mb-2">
-                      <h3 class="text-md font-semibold text-sky-700 bg-sky-50 px-3 py-1 rounded-md">المنتج {{ index + 1 }}</h3>
-                      <div class="flex space-x-2 space-x-reverse">
-                        <button 
-                          v-if="products.length > 1" 
-                          type="button" 
-                          @click="removeProduct(index)" 
-                          class="text-red-600 hover:text-red-800 bg-red-50 p-1 rounded-full"
-                          title="حذف المنتج"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">بيانات المنتج</h2>
+                  <div>
+                    <label for="product_description" class="form-label">وصف المنتج <span class="text-red-500">*</span></label>
+                    <textarea 
+                      id="product_description" 
+                      v-model="order.product_description" 
+                      class="form-input text-center" 
+                      rows="3" 
+                      required
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <!-- بيانات السعر والكمية -->
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">السعر والكمية</h2>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label for="quantity" class="form-label">الكمية <span class="text-red-500">*</span></label>
+                      <input 
+                        type="number" 
+                        id="quantity" 
+                        v-model="order.quantity" 
+                        class="form-input text-center" 
+                        min="0.01" 
+                        step="0.01" 
+                        required
+                        @input="calculateTotals"
+                      />
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <label :for="'product_name_' + index" class="form-label">اسم المنتج <span class="text-red-500">*</span></label>
-                        <input 
-                          type="text" 
-                          :id="'product_name_' + index" 
-                          v-model="product.name" 
-                          class="form-input text-center bg-white" 
-                          required
-                          placeholder="أدخل اسم المنتج"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label :for="'product_description_' + index" class="form-label">وصف المنتج</label>
-                        <input 
-                          type="text" 
-                          :id="'product_description_' + index" 
-                          v-model="product.description" 
-                          class="form-input text-center bg-white" 
-                          placeholder="وصف مختصر للمنتج"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                      <div>
-                        <label :for="'quantity_' + index" class="form-label">الكمية <span class="text-red-500">*</span></label>
+                    <div>
+                      <label for="unit_price" class="form-label">سعر الوحدة <span class="text-red-500">*</span></label>
+                      <div class="relative">
                         <input 
                           type="number" 
-                          :id="'quantity_' + index" 
-                          v-model="product.quantity" 
-                          class="form-input text-center bg-white" 
+                          id="unit_price" 
+                          v-model="order.unit_price" 
+                          class="form-input text-center pr-8" 
                           min="0.01" 
                           step="0.01" 
                           required
-                          @input="calculateProductSubtotal(index)"
+                          @input="calculateTotals"
                         />
-                      </div>
-                      
-                      <div>
-                        <label :for="'unit_price_' + index" class="form-label">سعر الوحدة <span class="text-red-500">*</span></label>
-                        <div class="relative">
-                          <input 
-                            type="number" 
-                            :id="'unit_price_' + index" 
-                            v-model="product.unit_price" 
-                            class="form-input text-center pr-8 bg-white" 
-                            min="0.01" 
-                            step="0.01" 
-                            required
-                            @input="calculateProductSubtotal(index)"
-                          />
-                          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span class="text-gray-500">€</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label :for="'subtotal_' + index" class="form-label">المجموع</label>
-                        <div class="relative">
-                          <input 
-                            type="number" 
-                            :id="'subtotal_' + index" 
-                            v-model="product.subtotal" 
-                            class="form-input text-center pr-8 bg-gray-100 font-bold" 
-                            readonly
-                          />
-                          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span class="text-gray-500">€</span>
-                          </div>
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
                         </div>
                       </div>
                     </div>
                     
                     <div>
-                      <label :for="'product_notes_' + index" class="form-label">ملاحظات المنتج</label>
-                      <textarea 
-                        :id="'product_notes_' + index" 
-                        v-model="product.notes" 
-                        class="form-input text-center bg-white" 
-                        rows="2" 
-                        placeholder="أي ملاحظات إضافية خاصة بالمنتج"
-                      ></textarea>
+                      <label for="tax_rate" class="form-label">نسبة الضريبة (%)</label>
+                      <input 
+                        type="number" 
+                        id="tax_rate" 
+                        v-model="order.tax_rate" 
+                        class="form-input text-center" 
+                        min="0" 
+                        step="0.01"
+                        @input="calculateTotals"
+                      />
                     </div>
-                  </div>
-                  
-                  <div class="mt-2">
-                    <button 
-                      type="button" 
-                      @click="addProduct" 
-                      class="btn bg-sky-100 text-sky-800 hover:bg-sky-200 flex items-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                      </svg>
-                      إضافة منتج آخر
-                    </button>
+                    
+                    <div>
+                      <label for="tax_amount" class="form-label">مبلغ الضريبة</label>
+                      <div class="relative">
+                        <input 
+                          type="number" 
+                          id="tax_amount" 
+                          v-model="order.tax_amount" 
+                          class="form-input text-center pr-8" 
+                          readonly
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
                 <!-- الإجماليات والملاحظات -->
-                <div class="col-span-1 md:col-span-2">
-                  <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">الإجماليات والملاحظات</h2>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="md:col-span-1">
-                      <div class="grid grid-cols-1 gap-4">
-                        <div>
-                          <label for="subtotal" class="form-label">المجموع الفرعي</label>
-                          <div class="relative">
-                            <input 
-                              type="number" 
-                              id="subtotal" 
-                              v-model="order.subtotal" 
-                              class="form-input text-center pr-8 bg-gray-100 font-bold" 
-                              readonly
-                            />
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <span class="text-gray-500">€</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label for="tax_rate" class="form-label">نسبة الضريبة (%)</label>
-                          <input 
-                            type="number" 
-                            id="tax_rate" 
-                            v-model="order.tax_rate" 
-                            class="form-input text-center bg-white" 
-                            min="0" 
-                            step="0.01"
-                            @input="calculateTotals"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label for="tax_amount" class="form-label">مبلغ الضريبة</label>
-                          <div class="relative">
-                            <input 
-                              type="number" 
-                              id="tax_amount" 
-                              v-model="order.tax_amount" 
-                              class="form-input text-center pr-8 bg-gray-100" 
-                              readonly
-                            />
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <span class="text-gray-500">€</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label for="total" class="form-label">الإجمالي</label>
-                          <div class="relative">
-                            <input 
-                              type="number" 
-                              id="total" 
-                              v-model="order.total" 
-                              class="form-input text-center pr-8 bg-sky-50 font-bold text-sky-800 border-sky-200" 
-                              readonly
-                            />
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <span class="text-gray-500">€</span>
-                            </div>
-                          </div>
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">الإجماليات والملاحظات</h2>
+                  <div class="grid grid-cols-1 gap-4">
+                    <div>
+                      <label for="subtotal" class="form-label">المجموع الفرعي</label>
+                      <div class="relative">
+                        <input 
+                          type="number" 
+                          id="subtotal" 
+                          v-model="order.subtotal" 
+                          class="form-input text-center pr-8" 
+                          readonly
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div class="md:col-span-1">
-                      <div>
-                        <label for="notes" class="form-label">ملاحظات الطلب</label>
-                        <textarea 
-                          id="notes" 
-                          v-model="order.notes" 
-                          class="form-input text-center bg-white" 
-                          rows="10"
-                          placeholder="أي ملاحظات إضافية خاصة بالطلب بشكل عام"
-                        ></textarea>
+                    <div>
+                      <label for="total" class="form-label">الإجمالي</label>
+                      <div class="relative">
+                        <input 
+                          type="number" 
+                          id="total" 
+                          v-model="order.total" 
+                          class="form-input text-center pr-8 font-bold" 
+                          readonly
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span class="text-gray-500">€</span>
+                        </div>
                       </div>
+                    </div>
+                    
+                    <div>
+                      <label for="notes" class="form-label">ملاحظات</label>
+                      <textarea 
+                        id="notes" 
+                        v-model="order.notes" 
+                        class="form-input text-center" 
+                        rows="3"
+                      ></textarea>
                     </div>
                   </div>
                 </div>
@@ -355,48 +278,27 @@ export default {
       customer_name: '',
       customer_phone: '',
       customer_address: '',
-      notes: '',
-      status: 'new',
+      product_description: '',
+      quantity: 1,
+      unit_price: 0,
+      subtotal: 0,
       tax_rate: 0,
       tax_amount: 0,
-      subtotal: 0,
       total: 0,
+      notes: '',
+      status: 'new',
       sales_rep_id: user.value?.id || null
     })
-    
-    // مصفوفة المنتجات
-    const products = ref([
-      {
-        id: 1,
-        name: '',
-        description: '',
-        notes: '',
-        quantity: 1,
-        unit_price: 0,
-        subtotal: 0
-      }
-    ])
     
     // تبديل حالة القائمة الجانبية للجوال
     const toggleSidebar = () => {
       showMobileSidebar.value = !showMobileSidebar.value
     }
     
-    // حساب المجموع الفرعي للمنتج
-    const calculateProductSubtotal = (index) => {
-      const product = products.value[index]
-      product.subtotal = parseFloat(product.quantity) * parseFloat(product.unit_price)
-      
-      // تحديث الإجماليات
-      calculateTotals()
-    }
-    
     // حساب الإجماليات
     const calculateTotals = () => {
-      // حساب المجموع الفرعي للطلب
-      order.subtotal = products.value.reduce((total, product) => {
-        return total + (parseFloat(product.subtotal) || 0)
-      }, 0)
+      // حساب المجموع الفرعي
+      order.subtotal = parseFloat(order.quantity) * parseFloat(order.unit_price)
       
       // حساب مبلغ الضريبة
       order.tax_amount = order.subtotal * (parseFloat(order.tax_rate) / 100)
@@ -405,56 +307,23 @@ export default {
       order.total = order.subtotal + order.tax_amount
     }
     
-    // إضافة منتج جديد
-    const addProduct = () => {
-      products.value.push({
-        id: Date.now(), // استخدام الطابع الزمني كمعرف مؤقت
-        name: '',
-        description: '',
-        notes: '',
-        quantity: 1,
-        unit_price: 0,
-        subtotal: 0
-      })
-      
-      // تحديث الإجماليات بعد إضافة منتج جديد
-      calculateTotals();
-    }
-    
-    // حذف منتج
-    const removeProduct = (index) => {
-      if (products.value.length > 1) {
-        products.value.splice(index, 1);
-        // تحديث الإجماليات بعد حذف منتج
-        calculateTotals();
-      }
-    }
-    
     // إعادة تعيين النموذج
     const resetForm = () => {
       Object.assign(order, {
         customer_name: '',
         customer_phone: '',
         customer_address: '',
-        notes: '',
-        status: 'new',
-        tax_rate: 0,
-        tax_amount: 0,
-        subtotal: 0,
-        total: 0,
-        sales_rep_id: user.value?.id || null
-      });
-      
-      // إعادة تعيين المنتجات إلى منتج واحد فارغ
-      products.value = [{
-        id: 1,
-        name: '',
-        description: '',
-        notes: '',
+        product_description: '',
         quantity: 1,
         unit_price: 0,
-        subtotal: 0
-      }];
+        subtotal: 0,
+        tax_rate: 0,
+        tax_amount: 0,
+        total: 0,
+        notes: '',
+        status: 'new',
+        sales_rep_id: user.value?.id || null
+      })
     }
     
     // إرسال الطلب
@@ -467,63 +336,35 @@ export default {
           throw new Error('معرف المستخدم غير متوفر. يرجى تسجيل الخروج وإعادة تسجيل الدخول.')
         }
         
-        // التحقق من جلسة المستخدم الحالية
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          throw new Error('جلسة المستخدم غير متوفرة. يرجى تسجيل الخروج وإعادة تسجيل الدخول.')
-        }
-        
         // حساب الإجماليات مرة أخرى للتأكد من صحتها
         calculateTotals()
         
-        // التأكد من أن المنتج الأول له وصف غير فارغ
-        if (!products.value[0].description) {
-          products.value[0].description = products.value[0].name || 'منتج بدون وصف';
-        }
-        
-        // إنشاء الطلب الرئيسي مع التأكد من إرسال معرف المستخدم الصحيح
-        const { data: orderData, error: orderError } = await supabase
+        // إرسال الطلب إلى قاعدة البيانات
+        const { data, error } = await supabase
           .from('orders')
           .insert([
             {
               customer_name: order.customer_name,
-              customer_phone: order.customer_phone || '',
-              customer_address: order.customer_address || '',
+              customer_phone: order.customer_phone,
+              customer_address: order.customer_address,
+              product_description: order.product_description,
+              quantity: parseFloat(order.quantity),
+              unit_price: parseFloat(order.unit_price),
               subtotal: parseFloat(order.subtotal),
               tax_rate: parseFloat(order.tax_rate),
               tax_amount: parseFloat(order.tax_amount),
               total: parseFloat(order.total),
-              notes: order.notes || '',
+              notes: order.notes,
               status: order.status,
-              sales_rep_id: session.user.id, // استخدام معرف المستخدم من الجلسة الحالية
-              product_description: products.value[0].description // إضافة وصف المنتج الأول كوصف للطلب
+              sales_rep_id: order.sales_rep_id
             }
           ])
           .select()
         
-        if (orderError) throw orderError
-        
-        const orderId = orderData[0].id
-        
-        // إضافة المنتجات المرتبطة بالطلب
-        const orderProducts = products.value.map(product => ({
-          order_id: orderId,
-          name: product.name,
-          description: product.description,
-          notes: product.notes,
-          quantity: parseFloat(product.quantity),
-          unit_price: parseFloat(product.unit_price),
-          subtotal: parseFloat(product.subtotal)
-        }))
-        
-        const { error: productsError } = await supabase
-          .from('order_products')
-          .insert(orderProducts)
-        
-        if (productsError) throw productsError
+        if (error) throw error
         
         // الانتقال إلى صفحة تفاصيل الطلب
-        router.push({ name: 'order-details', params: { id: orderId } })
+        router.push({ name: 'order-details', params: { id: data[0].id } })
       } catch (error) {
         console.error('خطأ في إنشاء الطلب:', error)
         alert('حدث خطأ أثناء إنشاء الطلب. يرجى المحاولة مرة أخرى.')
@@ -542,11 +383,7 @@ export default {
       showMobileSidebar,
       toggleSidebar,
       order,
-      products,
-      calculateProductSubtotal,
       calculateTotals,
-      addProduct,
-      removeProduct,
       resetForm,
       submitOrder,
       submitting,
@@ -558,11 +395,11 @@ export default {
 
 <style scoped>
 .form-label {
-  @apply block text-sm font-medium text-gray-700 mb-1 text-center;
+  @apply block text-sm font-medium text-gray-700 mb-1;
 }
 
 .form-input {
-  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm px-4 py-2;
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm;
 }
 
 .btn {

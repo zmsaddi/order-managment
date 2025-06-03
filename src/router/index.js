@@ -52,12 +52,6 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/orders/edit/:id',
-    name: 'edit-order',
-    component: () => import('@/views/EditOrderView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/reports',
     name: 'reports',
     component: () => import('@/views/ReportsView.vue'),
