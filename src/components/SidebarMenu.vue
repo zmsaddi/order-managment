@@ -18,18 +18,6 @@
           </router-link>
         </li>
         
-        <!-- إدارة المستخدمين - للمدراء فقط -->
-        <li v-if="isAdmin">
-          <router-link to="/users" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/users' }">
-            <span class="ml-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-              </svg>
-            </span>
-            <span>المستخدمين</span>
-          </router-link>
-        </li>
-        
         <!-- الطلبات - متاح للجميع -->
         <li>
           <router-link to="/orders" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/orders' }">
@@ -52,30 +40,6 @@
             </span>
             <span>التقارير</span>
           </router-link>
-        </li>
-        
-        <!-- الملف الشخصي - متاح للجميع -->
-        <li>
-          <router-link to="/profile" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/profile' }">
-            <span class="ml-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
-              </svg>
-            </span>
-            <span>الملف الشخصي</span>
-          </router-link>
-        </li>
-        
-        <!-- تسجيل الخروج - متاح للجميع -->
-        <li>
-          <button @click="logout" class="w-full flex items-center px-4 py-3 hover:bg-sky-700 transition-colors text-left">
-            <span class="ml-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-              </svg>
-            </span>
-            <span>تسجيل الخروج</span>
-          </button>
         </li>
       </ul>
     </nav>
@@ -106,18 +70,6 @@
             </router-link>
           </li>
           
-          <!-- إدارة المستخدمين - للمدراء فقط -->
-          <li v-if="isAdmin">
-            <router-link to="/users" @click="toggleMobileMenu" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/users' }">
-              <span class="ml-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                </svg>
-              </span>
-              <span>المستخدمين</span>
-            </router-link>
-          </li>
-          
           <!-- الطلبات - متاح للجميع -->
           <li>
             <router-link to="/orders" @click="toggleMobileMenu" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/orders' }">
@@ -140,30 +92,6 @@
               </span>
               <span>التقارير</span>
             </router-link>
-          </li>
-          
-          <!-- الملف الشخصي - متاح للجميع -->
-          <li>
-            <router-link to="/profile" @click="toggleMobileMenu" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/profile' }">
-              <span class="ml-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
-                </svg>
-              </span>
-              <span>الملف الشخصي</span>
-            </router-link>
-          </li>
-          
-          <!-- تسجيل الخروج - متاح للجميع -->
-          <li>
-            <button @click="logoutMobile" class="w-full flex items-center px-4 py-3 hover:bg-sky-700 transition-colors text-left">
-              <span class="ml-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-                </svg>
-              </span>
-              <span>تسجيل الخروج</span>
-            </button>
           </li>
         </ul>
       </nav>

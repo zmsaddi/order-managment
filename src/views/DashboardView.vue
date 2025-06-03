@@ -19,10 +19,7 @@
               <h2 class="text-xl font-semibold text-gray-800">لوحة التحكم</h2>
             </div>
             <div class="flex items-center">
-              <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
-              <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
-                {{ user.name ? user.name.charAt(0) : 'U' }}
-              </div>
+              <UserProfileMenu :user="user" />
             </div>
           </div>
         </header>
@@ -264,6 +261,7 @@ import { supabase } from '@/services/supabase'
 import { authService } from '@/services/auth.service'
 import { useRouter } from 'vue-router'
 import SidebarMenu from '@/components/SidebarMenu.vue'
+import UserProfileMenu from '@/components/UserProfileMenu.vue'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 export default {
