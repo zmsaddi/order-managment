@@ -1,34 +1,34 @@
 <template>
   <div id="app">
     <div v-if="isAuthenticated" class="min-h-screen bg-gray-50">
-      <!-- القائمة الجانبية والشريط العلوي -->
+      <!-- القائمة الجانبية والمحتوى الرئيسي -->
       <div class="flex h-screen overflow-hidden">
-        <!-- القائمة الجانبية -->
-        <SidebarMenu :user="user" />
+        <!-- القائمة الجانبية للشاشات الكبيرة -->
+        <SidebarMenu :user="user" class="hidden md:block" />
         
         <!-- المحتوى الرئيسي -->
         <div class="flex-1 flex flex-col overflow-hidden">
-          <!-- الشريط العلوي -->
-          <header class="bg-white shadow-sm z-10">
-            <div class="flex items-center justify-between p-4">
-              <div class="flex items-center">
-                <button @click="toggleSidebar" class="md:hidden ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-                <h2 class="text-xl font-semibold text-gray-800">{{ pageTitle }}</h2>
-              </div>
-              <div class="flex items-center">
-                <UserProfileMenu :user="user" />
-              </div>
-            </div>
-          </header>
-          
           <!-- محتوى الصفحة -->
-          <main class="flex-1 overflow-y-auto">
-            <router-view @update-page-title="updatePageTitle" />
-          </main>
+          <router-view 
+            @update-page-title="updatePageTitle" 
+            :key="$route.fullPath"
+          />
+        </div>
+      </div>
+      
+      <!-- القائمة الجانبية للجوال -->
+      <div v-if="showMobileSidebar" class="fixed inset-0 z-50 md:hidden">
+        <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
+        <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
+          <div class="p-4 border-b border-sky-700 flex justify-between items-center">
+            <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
+            <button @click="toggleSidebar">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <SidebarMenu :user="user" mobile @item-click="toggleSidebar" />
         </div>
       </div>
     </div>
@@ -39,17 +39,15 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, provide } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { authService } from '@/services/auth.service'
 import SidebarMenu from '@/components/SidebarMenu.vue'
-import UserProfileMenu from '@/components/UserProfileMenu.vue'
 
 export default {
   name: 'App',
   components: {
-    SidebarMenu,
-    UserProfileMenu
+    SidebarMenu
   },
   setup() {
     const router = useRouter()
@@ -100,41 +98,12 @@ export default {
       }
     }
     
-    // تعيين عنوان الصفحة الافتراضي بناءً على المسار
-    const setDefaultPageTitle = () => {
-      switch (route.path) {
-        case '/dashboard':
-          pageTitle.value = 'لوحة التحكم'
-          break
-        case '/orders':
-          pageTitle.value = 'الطلبات'
-          break
-        case '/reports':
-          pageTitle.value = 'التقارير'
-          break
-        case '/users':
-          pageTitle.value = 'المستخدمين'
-          break
-        case '/profile':
-          pageTitle.value = 'الملف الشخصي'
-          break
-        default:
-          if (route.path.startsWith('/orders/')) {
-            pageTitle.value = 'تفاصيل الطلب'
-          } else {
-            pageTitle.value = 'نظام إدارة الطلبات'
-          }
-      }
-    }
-    
-    // مراقبة تغيير المسار لتحديث عنوان الصفحة
-    watch(() => route.path, () => {
-      setDefaultPageTitle()
-    })
+    // توفير بيانات المستخدم وحالة القائمة الجانبية للمكونات الفرعية
+    provide('user', user)
+    provide('toggleSidebar', toggleSidebar)
     
     onMounted(() => {
       checkAuth()
-      setDefaultPageTitle()
     })
     
     return {
