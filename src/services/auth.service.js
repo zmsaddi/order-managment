@@ -76,7 +76,7 @@ export const authService = {
   },
 
   // إنشاء مستخدم جديد
-  async createUser(email, password, userData) {
+  async createUser(userData) {
     // التحقق من صلاحيات المستخدم الحالي
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     if (!['admin', 'sales_manager'].includes(currentUser.role)) {
@@ -84,68 +84,36 @@ export const authService = {
     }
 
     try {
-      // محاولة استخدام admin.createUser أولاً إذا كان متاحاً (في بيئة الخادم)
-      const { data, error } = await supabase.auth.admin.createUser({
+      const email = userData.email;
+      const password = userData.password;
+      
+      // استخدام signUp مباشرة لإنشاء المستخدم
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        email_confirm: true
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+            email: email
+          }
+        }
       })
 
-      if (error) {
-        // إذا فشل admin.createUser، نستخدم signUp كبديل
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name: userData.name,
-              role: userData.role,
-              email: email
-            }
-          }
-        })
+      if (signUpError) throw signUpError
 
-        if (signUpError) throw signUpError
-
-        // تفعيل المستخدم يدوياً عبر SQL (يعمل فقط إذا كان هناك trigger في قاعدة البيانات)
-        await supabase.rpc('confirm_user', { user_email: email })
-
-        // إنشاء سجل المستخدم في جدول المستخدمين
-        const { data: newUser, error: userError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: signUpData.user.id,
-              email: email,
-              name: userData.name,
-              role: userData.role,
-              phone: userData.phone,
-              address: userData.address,
-              status: userData.status
-            }
-          ])
-          .select()
-          .single()
-
-        if (userError) throw userError
-
-        return {
-          user: newUser
-        }
-      }
-
-      // إذا نجح admin.createUser، نستمر بالطريقة العادية
+      // إنشاء سجل المستخدم في جدول المستخدمين
       const { data: newUser, error: userError } = await supabase
         .from('users')
         .insert([
           {
-            id: data.user.id,
+            id: signUpData.user.id,
             email: email,
             name: userData.name,
             role: userData.role,
             phone: userData.phone,
             address: userData.address,
-            status: userData.status
+            status: userData.status || 'active'
           }
         ])
         .select()
@@ -153,6 +121,14 @@ export const authService = {
 
       if (userError) throw userError
 
+      // محاولة تفعيل المستخدم تلقائياً (إذا كان هناك وظيفة RPC متاحة)
+      try {
+        await supabase.rpc('confirm_user', { user_email: email })
+      } catch (confirmError) {
+        console.warn('لم يتم تفعيل المستخدم تلقائياً، قد يحتاج إلى تفعيل يدوي:', confirmError)
+      }
+
+      // تحديث قائمة المستخدمين في الواجهة
       return {
         user: newUser
       }
