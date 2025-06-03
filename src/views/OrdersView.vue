@@ -386,7 +386,6 @@ export default {
       
       return result;
     })
-    })
     
     // تبديل حالة القائمة الجانبية للجوال
     const toggleSidebar = () => {
