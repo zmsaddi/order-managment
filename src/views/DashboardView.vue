@@ -21,7 +21,7 @@
             <div class="flex items-center">
               <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
               <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
-                {{ user.name.charAt(0) }}
+                {{ user.name ? user.name.charAt(0) : 'U' }}
               </div>
             </div>
           </div>
@@ -119,9 +119,9 @@
                     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                       <div class="flex items-center justify-between mb-2">
                         <h3 class="font-semibold text-yellow-800">طلبات جديدة</h3>
-                        <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.new.length }}</span>
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.new ? ordersByStatus.new.length : 0 }}</span>
                       </div>
-                      <div v-if="ordersByStatus.new.length === 0" class="text-center py-2 text-sm text-gray-500">
+                      <div v-if="!ordersByStatus.new || ordersByStatus.new.length === 0" class="text-center py-2 text-sm text-gray-500">
                         لا توجد طلبات
                       </div>
                       <div v-else class="space-y-2">
@@ -134,7 +134,7 @@
                           </div>
                           <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
                         </div>
-                        <div v-if="ordersByStatus.new.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                        <div v-if="ordersByStatus.new && ordersByStatus.new.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
                           <router-link :to="{ path: '/orders', query: { status: 'new' } }">
                             عرض {{ ordersByStatus.new.length - 3 }} طلبات أخرى
                           </router-link>
@@ -146,9 +146,9 @@
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <div class="flex items-center justify-between mb-2">
                         <h3 class="font-semibold text-blue-800">بانتظار التسليم</h3>
-                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.completed_pending_delivery.length }}</span>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.completed_pending_delivery ? ordersByStatus.completed_pending_delivery.length : 0 }}</span>
                       </div>
-                      <div v-if="ordersByStatus.completed_pending_delivery.length === 0" class="text-center py-2 text-sm text-gray-500">
+                      <div v-if="!ordersByStatus.completed_pending_delivery || ordersByStatus.completed_pending_delivery.length === 0" class="text-center py-2 text-sm text-gray-500">
                         لا توجد طلبات
                       </div>
                       <div v-else class="space-y-2">
@@ -161,7 +161,7 @@
                           </div>
                           <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
                         </div>
-                        <div v-if="ordersByStatus.completed_pending_delivery.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                        <div v-if="ordersByStatus.completed_pending_delivery && ordersByStatus.completed_pending_delivery.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
                           <router-link :to="{ path: '/orders', query: { status: 'completed_pending_delivery' } }">
                             عرض {{ ordersByStatus.completed_pending_delivery.length - 3 }} طلبات أخرى
                           </router-link>
@@ -173,9 +173,9 @@
                     <div class="bg-green-50 p-4 rounded-lg border border-green-200">
                       <div class="flex items-center justify-between mb-2">
                         <h3 class="font-semibold text-green-800">تم التسليم</h3>
-                        <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.delivered.length }}</span>
+                        <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.delivered ? ordersByStatus.delivered.length : 0 }}</span>
                       </div>
-                      <div v-if="ordersByStatus.delivered.length === 0" class="text-center py-2 text-sm text-gray-500">
+                      <div v-if="!ordersByStatus.delivered || ordersByStatus.delivered.length === 0" class="text-center py-2 text-sm text-gray-500">
                         لا توجد طلبات
                       </div>
                       <div v-else class="space-y-2">
@@ -188,7 +188,7 @@
                           </div>
                           <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
                         </div>
-                        <div v-if="ordersByStatus.delivered.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                        <div v-if="ordersByStatus.delivered && ordersByStatus.delivered.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
                           <router-link :to="{ path: '/orders', query: { status: 'delivered' } }">
                             عرض {{ ordersByStatus.delivered.length - 3 }} طلبات أخرى
                           </router-link>
@@ -200,9 +200,9 @@
                     <div class="bg-red-50 p-4 rounded-lg border border-red-200">
                       <div class="flex items-center justify-between mb-2">
                         <h3 class="font-semibold text-red-800">ملغاة</h3>
-                        <span class="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.cancelled.length }}</span>
+                        <span class="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.cancelled ? ordersByStatus.cancelled.length : 0 }}</span>
                       </div>
-                      <div v-if="ordersByStatus.cancelled.length === 0" class="text-center py-2 text-sm text-gray-500">
+                      <div v-if="!ordersByStatus.cancelled || ordersByStatus.cancelled.length === 0" class="text-center py-2 text-sm text-gray-500">
                         لا توجد طلبات
                       </div>
                       <div v-else class="space-y-2">
@@ -215,7 +215,7 @@
                           </div>
                           <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
                         </div>
-                        <div v-if="ordersByStatus.cancelled.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                        <div v-if="ordersByStatus.cancelled && ordersByStatus.cancelled.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
                           <router-link :to="{ path: '/orders', query: { status: 'cancelled' } }">
                             عرض {{ ordersByStatus.cancelled.length - 3 }} طلبات أخرى
                           </router-link>
@@ -346,6 +346,27 @@ export default {
       cancelled: []
     })
     
+    // جلب الطلبات الأخيرة
+    const fetchRecentOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10)
+        
+        if (error) throw error
+        
+        recentOrders.value = data || []
+        
+        // تحديث الطلبات حسب الحالة
+        await fetchOrdersByStatus()
+      } catch (error) {
+        console.error('خطأ في جلب الطلبات الأخيرة:', error)
+        recentOrders.value = []
+      }
+    }
+    
     // جلب الطلبات حسب الحالة
     const fetchOrdersByStatus = async () => {
       try {
@@ -358,13 +379,20 @@ export default {
         
         // تصنيف الطلبات حسب الحالة
         ordersByStatus.value = {
-          new: data.filter(order => order.status === 'new'),
-          completed_pending_delivery: data.filter(order => order.status === 'completed_pending_delivery'),
-          delivered: data.filter(order => order.status === 'delivered'),
-          cancelled: data.filter(order => order.status === 'cancelled')
+          new: data.filter(order => order.status === 'new') || [],
+          completed_pending_delivery: data.filter(order => order.status === 'completed_pending_delivery') || [],
+          delivered: data.filter(order => order.status === 'delivered') || [],
+          cancelled: data.filter(order => order.status === 'cancelled') || []
         }
       } catch (error) {
         console.error('خطأ في جلب الطلبات حسب الحالة:', error)
+        // تهيئة القيم الافتراضية في حالة الخطأ
+        ordersByStatus.value = {
+          new: [],
+          completed_pending_delivery: [],
+          delivered: [],
+          cancelled: []
+        }
       }
     }
     
@@ -437,6 +465,17 @@ export default {
         }
       } catch (error) {
         console.error('خطأ في جلب الإحصائيات:', error)
+        // تهيئة القيم الافتراضية في حالة الخطأ
+        stats.value = {
+          totalOrders: 0,
+          newOrders: 0,
+          completedOrders: 0,
+          totalSales: 0,
+          monthlySales: 0,
+          averageOrderValue: 0,
+          highestOrderValue: 0,
+          newOrdersPercentage: 0
+        }
       }
     }
     
@@ -460,6 +499,8 @@ export default {
           fetchRecentOrders(),
           fetchStats()
         ])
+      } catch (error) {
+        console.error('خطأ في تهيئة الصفحة:', error)
       } finally {
         loading.value = false
       }
@@ -473,6 +514,7 @@ export default {
       loading,
       recentOrders,
       stats,
+      ordersByStatus,
       getStatusText,
       getStatusClass,
       logout,
