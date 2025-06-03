@@ -27,21 +27,7 @@
           </div>
         </header>
         
-        <!-- القائمة الجانبية للجوال -->
-        <div v-if="showMobileSidebar" class="fixed inset-0 z-20 md:hidden">
-          <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
-          <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
-            <div class="p-4 border-b border-sky-700 flex justify-between items-center">
-              <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
-              <button @click="toggleSidebar">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <SidebarMenu :user="user" mobile @item-click="toggleSidebar" />
-          </div>
-        </div>
+        <!-- تم إزالة القائمة الجانبية للجوال من هنا لأنها موجودة الآن في مكون SidebarMenu.vue -->
         
         <!-- محتوى الصفحة -->
         <main class="flex-1 overflow-y-auto p-4">
