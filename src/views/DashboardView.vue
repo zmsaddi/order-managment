@@ -19,10 +19,7 @@
               <h2 class="text-xl font-semibold text-gray-800">لوحة التحكم</h2>
             </div>
             <div class="flex items-center">
-              <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
-              <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
-                {{ user.name ? user.name.charAt(0) : 'U' }}
-              </div>
+              <UserProfileMenu :user="user" />
             </div>
           </div>
         </header>
@@ -264,12 +261,14 @@ import { supabase } from '@/services/supabase'
 import { authService } from '@/services/auth.service'
 import { useRouter } from 'vue-router'
 import SidebarMenu from '@/components/SidebarMenu.vue'
+import UserProfileMenu from '@/components/UserProfileMenu.vue'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 export default {
   name: 'DashboardView',
   components: {
-    SidebarMenu
+    SidebarMenu,
+    UserProfileMenu
   },
   setup() {
     const router = useRouter()
@@ -279,6 +278,26 @@ export default {
     
     // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+    
+    // التحقق من وجود بيانات المستخدم عند تحميل الصفحة
+    onMounted(async () => {
+      // إذا كانت بيانات المستخدم غير موجودة في التخزين المحلي، قم بالتحقق من حالة المصادقة
+      if (!user.value.id) {
+        try {
+          const { user: authUser } = await authService.checkAuth()
+          if (authUser) {
+            user.value = authUser
+            localStorage.setItem('user', JSON.stringify(authUser))
+          } else {
+            // إذا لم يكن المستخدم مسجل الدخول، انتقل إلى صفحة تسجيل الدخول
+            router.push({ name: 'login' })
+          }
+        } catch (error) {
+          console.error('خطأ في التحقق من حالة المصادقة:', error)
+          router.push({ name: 'login' })
+        }
+      }
+    })
     
     // التحقق من صلاحيات المستخدم
     const isAdmin = computed(() => {
