@@ -83,82 +83,40 @@ export const authService = {
       throw new Error('ليس لديك صلاحية لإنشاء مستخدمين جدد')
     }
 
-    try {
-      // محاولة استخدام admin.createUser أولاً إذا كان متاحاً (في بيئة الخادم)
-      const { data, error } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true
-      })
+    // إنشاء المستخدم في نظام المصادقة
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    })
 
-      if (error) {
-        // إذا فشل admin.createUser، نستخدم signUp كبديل
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name: userData.name,
-              role: userData.role,
-              email: email
-            }
-          }
-        })
+    if (error) throw error
 
-        if (signUpError) throw signUpError
-
-        // تفعيل المستخدم يدوياً عبر SQL (يعمل فقط إذا كان هناك trigger في قاعدة البيانات)
-        await supabase.rpc('confirm_user', { user_email: email })
-
-        // إنشاء سجل المستخدم في جدول المستخدمين
-        const { data: newUser, error: userError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: signUpData.user.id,
-              email: email,
-              name: userData.name,
-              role: userData.role,
-              phone: userData.phone,
-              address: userData.address,
-              status: userData.status
-            }
-          ])
-          .select()
-          .single()
-
-        if (userError) throw userError
-
-        return {
-          user: newUser
+    // إنشاء سجل المستخدم في جدول المستخدمين
+    const { data: newUser, error: userError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: data.user.id,
+          email: email,
+          name: userData.name,
+          role: userData.role,
+          phone: userData.phone,
+          address: userData.address,
+          status: userData.status
         }
-      }
+      ])
+      .select()
+      .single()
 
-      // إذا نجح admin.createUser، نستمر بالطريقة العادية
-      const { data: newUser, error: userError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: data.user.id,
-            email: email,
-            name: userData.name,
-            role: userData.role,
-            phone: userData.phone,
-            address: userData.address,
-            status: userData.status
-          }
-        ])
-        .select()
-        .single()
+    if (userError) {
+      // إذا فشل إنشاء سجل المستخدم، قم بحذف المستخدم من نظام المصادقة
+      await supabase.auth.admin.deleteUser(data.user.id)
+      throw userError
+    }
 
-      if (userError) throw userError
-
-      return {
-        user: newUser
-      }
-    } catch (error) {
-      console.error('خطأ في إنشاء المستخدم:', error)
-      throw error
+    return {
+      user: newUser
     }
   },
 
@@ -221,9 +179,11 @@ export const authService = {
       throw new Error('لا يمكن لمدير المبيعات حذف مدير مبيعات آخر')
     }
 
-    // حذف سجل المستخدم من جدول المستخدمين فقط
-    // ملاحظة: لا يمكننا حذف المستخدم من نظام المصادقة لأننا لا نملك صلاحيات admin
-    // يجب حذف المستخدم يدوياً من لوحة تحكم Supabase إذا لزم الأمر
+    // حذف المستخدم من نظام المصادقة
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId)
+    if (authError) throw authError
+
+    // حذف سجل المستخدم من جدول المستخدمين
     const { error } = await supabase
       .from('users')
       .delete()
@@ -231,7 +191,7 @@ export const authService = {
 
     if (error) throw error
 
-    return { success: true, message: 'تم حذف المستخدم من النظام. لحذفه بشكل كامل من نظام المصادقة، يرجى استخدام لوحة تحكم Supabase.' }
+    return { success: true }
   },
 
   // إعادة تعيين كلمة المرور
