@@ -121,12 +121,8 @@ export const authService = {
 
       if (userError) throw userError
 
-      // محاولة تفعيل المستخدم تلقائياً (إذا كان هناك وظيفة RPC متاحة)
-      try {
-        await supabase.rpc('confirm_user', { user_email: email })
-      } catch (confirmError) {
-        console.warn('لم يتم تفعيل المستخدم تلقائياً، قد يحتاج إلى تفعيل يدوي:', confirmError)
-      }
+      // إزالة محاولة تفعيل المستخدم تلقائياً لأن وظيفة RPC غير متوفرة
+      // تم إزالة استدعاء confirm_user لأنه يسبب خطأ 404
 
       // تحديث قائمة المستخدمين في الواجهة
       return {

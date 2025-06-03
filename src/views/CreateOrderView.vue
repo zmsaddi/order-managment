@@ -476,21 +476,27 @@ export default {
         // حساب الإجماليات مرة أخرى للتأكد من صحتها
         calculateTotals()
         
+        // التأكد من أن المنتج الأول له وصف غير فارغ
+        if (!products.value[0].description) {
+          products.value[0].description = products.value[0].name || 'منتج بدون وصف';
+        }
+        
         // إنشاء الطلب الرئيسي مع التأكد من إرسال معرف المستخدم الصحيح
         const { data: orderData, error: orderError } = await supabase
           .from('orders')
           .insert([
             {
               customer_name: order.customer_name,
-              customer_phone: order.customer_phone,
-              customer_address: order.customer_address,
+              customer_phone: order.customer_phone || '',
+              customer_address: order.customer_address || '',
               subtotal: parseFloat(order.subtotal),
               tax_rate: parseFloat(order.tax_rate),
               tax_amount: parseFloat(order.tax_amount),
               total: parseFloat(order.total),
-              notes: order.notes,
+              notes: order.notes || '',
               status: order.status,
-              sales_rep_id: session.user.id // استخدام معرف المستخدم من الجلسة الحالية
+              sales_rep_id: session.user.id, // استخدام معرف المستخدم من الجلسة الحالية
+              product_description: products.value[0].description // إضافة وصف المنتج الأول كوصف للطلب
             }
           ])
           .select()
