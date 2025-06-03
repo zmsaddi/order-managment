@@ -76,47 +76,56 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes
 })
 
 // حماية المسارات التي تتطلب المصادقة
 router.beforeEach(async (to, from, next) => {
-  // التحقق من وجود جلسة مستخدم
-  const { data: { session } } = await supabase.auth.getSession()
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
+  try {
+    // التحقق من وجود جلسة مستخدم
+    const { data: { session } } = await supabase.auth.getSession()
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+    const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
 
-  // إذا كان المسار يتطلب المصادقة ولا توجد جلسة، توجيه المستخدم إلى صفحة تسجيل الدخول
-  if (requiresAuth && !session) {
-    next({ name: 'login' })
-    return
-  }
+    // إذا كان المسار يتطلب المصادقة ولا توجد جلسة، توجيه المستخدم إلى صفحة تسجيل الدخول
+    if (requiresAuth && !session) {
+      next({ name: 'login' })
+      return
+    }
 
-  // إذا كان المستخدم مسجل الدخول ويحاول الوصول إلى صفحة تسجيل الدخول، توجيهه إلى لوحة التحكم
-  if (session && to.name === 'login') {
-    next({ name: 'dashboard' })
-    return
-  }
-
-  // إذا كان المسار يتطلب صلاحيات المدير، تحقق من دور المستخدم
-  if (requiresAdmin && session) {
-    // جلب بيانات المستخدم من جدول المستخدمين
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single()
-
-    if (error || !userData || !['admin', 'sales_manager'].includes(userData.role)) {
-      // إذا لم يكن المستخدم مديراً، توجيهه إلى لوحة التحكم
+    // إذا كان المستخدم مسجل الدخول ويحاول الوصول إلى صفحة تسجيل الدخول، توجيهه إلى لوحة التحكم
+    if (session && to.name === 'login') {
       next({ name: 'dashboard' })
       return
     }
-  }
 
-  // السماح بالمتابعة
-  next()
+    // إذا كان المسار يتطلب صلاحيات المدير، تحقق من دور المستخدم
+    if (requiresAdmin && session) {
+      // جلب بيانات المستخدم من جدول المستخدمين
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (error || !userData || !['admin', 'sales_manager'].includes(userData.role)) {
+        // إذا لم يكن المستخدم مديراً، توجيهه إلى لوحة التحكم
+        next({ name: 'dashboard' })
+        return
+      }
+    }
+
+    // السماح بالمتابعة
+    next()
+  } catch (error) {
+    console.error('خطأ في التوجيه:', error)
+    if (to.meta.requiresAuth) {
+      next({ name: 'login' })
+    } else {
+      next()
+    }
+  }
 })
 
 export default router
