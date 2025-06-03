@@ -1,124 +1,169 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- قالب التقارير -->
-    <div class="container mx-auto px-4 py-8">
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <h1 class="text-2xl font-bold text-sky-700 mb-6 text-center">تقارير المبيعات</h1>
-        
-        <!-- فلاتر التقارير -->
-        <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-from">
-              من تاريخ
-            </label>
-            <input
-              type="date"
-              id="date-from"
-              v-model="filters.dateFrom"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-to">
-              إلى تاريخ
-            </label>
-            <input
-              type="date"
-              id="date-to"
-              v-model="filters.dateTo"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="status">
-              حالة الطلب
-            </label>
-            <select
-              id="status"
-              v-model="filters.status"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
-            >
-              <option value="">جميع الحالات</option>
-              <option value="new">جديد</option>
-              <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
-              <option value="delivered">تم التسليم</option>
-              <option value="cancelled">ملغى</option>
-            </select>
-          </div>
-        </div>
-        
-        <!-- زر تطبيق الفلتر -->
-        <div class="flex justify-center mb-8">
-          <button
-            @click="applyFilters"
-            class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-          >
-            تطبيق الفلتر
-          </button>
-        </div>
-        
-        <!-- جدول التقارير -->
-        <div class="overflow-x-auto">
-          <table class="min-w-full bg-white">
-            <thead>
-              <tr>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">رقم الطلب</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">اسم العميل</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">تاريخ الطلب</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">المبلغ الإجمالي</th>
-                <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">حالة الطلب</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="loading" class="text-center">
-                <td colspan="5" class="py-4">جاري تحميل البيانات...</td>
-              </tr>
-              <tr v-else-if="orders.length === 0" class="text-center">
-                <td colspan="5" class="py-4">لا توجد بيانات متاحة</td>
-              </tr>
-              <template v-else>
-                <tr v-for="order in orders" :key="order.id" class="border-b hover:bg-gray-50">
-                  <td class="py-3 px-4 text-center">{{ order.id }}</td>
-                  <td class="py-3 px-4 text-center">{{ order.customer_name }}</td>
-                  <td class="py-3 px-4 text-center">{{ formatDate(order.created_at) }}</td>
-                  <td class="py-3 px-4 text-center">{{ order.total }} ريال</td>
-                  <td class="py-3 px-4 text-center">
-                    <span :class="getStatusClass(order.status)">{{ getStatusText(order.status) }}</span>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- ملخص التقرير -->
-        <div class="mt-8 p-4 bg-sky-50 rounded-lg">
-          <h2 class="text-xl font-bold text-sky-700 mb-4 text-center">ملخص التقرير</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <p class="text-gray-600 mb-2">إجمالي عدد الطلبات</p>
-              <p class="text-2xl font-bold text-sky-700">{{ summary.totalOrders }}</p>
+    <!-- القائمة الجانبية والشريط العلوي -->
+    <div class="flex h-screen overflow-hidden">
+      <!-- القائمة الجانبية -->
+      <SidebarMenu :user="user" />
+      
+      <!-- المحتوى الرئيسي -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- الشريط العلوي -->
+        <header class="bg-white shadow-sm z-10">
+          <div class="flex items-center justify-between p-4">
+            <div class="flex items-center">
+              <button @click="toggleSidebar" class="md:hidden ml-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <h2 class="text-xl font-semibold text-gray-800">تقارير المبيعات</h2>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <p class="text-gray-600 mb-2">إجمالي المبيعات</p>
-              <p class="text-2xl font-bold text-sky-700">{{ summary.totalSales }} ريال</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow text-center">
-              <p class="text-gray-600 mb-2">متوسط قيمة الطلب</p>
-              <p class="text-2xl font-bold text-sky-700">{{ summary.averageOrderValue }} ريال</p>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
+              <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
+                {{ user.name.charAt(0) }}
+              </div>
             </div>
           </div>
+        </header>
+        
+        <!-- القائمة الجانبية للجوال -->
+        <div v-if="showMobileSidebar" class="fixed inset-0 z-20 md:hidden">
+          <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
+          <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
+            <div class="p-4 border-b border-sky-700 flex justify-between items-center">
+              <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
+              <button @click="toggleSidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <SidebarMenu :user="user" mobile @item-click="toggleSidebar" />
+          </div>
         </div>
         
-        <!-- زر طباعة التقرير -->
-        <div class="flex justify-center mt-8">
-          <button
-            @click="printReport"
-            class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
-          >
-            طباعة التقرير
-          </button>
-        </div>
+        <!-- محتوى الصفحة -->
+        <main class="flex-1 overflow-y-auto p-4">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold text-sky-700 mb-6 text-center">تقارير المبيعات</h1>
+            
+            <!-- فلاتر التقارير -->
+            <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-from">
+                  من تاريخ
+                </label>
+                <input
+                  type="date"
+                  id="date-from"
+                  v-model="filters.dateFrom"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                />
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-to">
+                  إلى تاريخ
+                </label>
+                <input
+                  type="date"
+                  id="date-to"
+                  v-model="filters.dateTo"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                />
+              </div>
+              <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="status">
+                  حالة الطلب
+                </label>
+                <select
+                  id="status"
+                  v-model="filters.status"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                >
+                  <option value="">جميع الحالات</option>
+                  <option value="new">جديد</option>
+                  <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
+                  <option value="delivered">تم التسليم</option>
+                  <option value="cancelled">ملغى</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- زر تطبيق الفلتر -->
+            <div class="flex justify-center mb-8">
+              <button
+                @click="applyFilters"
+                class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              >
+                تطبيق الفلتر
+              </button>
+            </div>
+            
+            <!-- جدول التقارير -->
+            <div class="overflow-x-auto">
+              <table class="min-w-full bg-white">
+                <thead>
+                  <tr>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">رقم الطلب</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">اسم العميل</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">تاريخ الطلب</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">المبلغ الإجمالي</th>
+                    <th class="py-3 px-4 bg-sky-100 text-center text-sky-800 font-semibold">حالة الطلب</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="loading" class="text-center">
+                    <td colspan="5" class="py-4">جاري تحميل البيانات...</td>
+                  </tr>
+                  <tr v-else-if="orders.length === 0" class="text-center">
+                    <td colspan="5" class="py-4">لا توجد بيانات متاحة</td>
+                  </tr>
+                  <template v-else>
+                    <tr v-for="order in orders" :key="order.id" class="border-b hover:bg-gray-50">
+                      <td class="py-3 px-4 text-center">{{ order.id }}</td>
+                      <td class="py-3 px-4 text-center">{{ order.customer_name }}</td>
+                      <td class="py-3 px-4 text-center">{{ formatDate(order.created_at) }}</td>
+                      <td class="py-3 px-4 text-center">{{ formatCurrency(order.total) }}</td>
+                      <td class="py-3 px-4 text-center">
+                        <span :class="getStatusClass(order.status)">{{ getStatusText(order.status) }}</span>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- ملخص التقرير -->
+            <div class="mt-8 p-4 bg-sky-50 rounded-lg">
+              <h2 class="text-xl font-bold text-sky-700 mb-4 text-center">ملخص التقرير</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                  <p class="text-gray-600 mb-2">إجمالي عدد الطلبات</p>
+                  <p class="text-2xl font-bold text-sky-700">{{ summary.totalOrders }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                  <p class="text-gray-600 mb-2">إجمالي المبيعات</p>
+                  <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.totalSales) }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                  <p class="text-gray-600 mb-2">متوسط قيمة الطلب</p>
+                  <p class="text-2xl font-bold text-sky-700">{{ formatCurrency(summary.averageOrderValue) }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- زر طباعة التقرير -->
+            <div class="flex justify-center mt-8">
+              <button
+                @click="printReport"
+                class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline"
+              >
+                طباعة التقرير
+              </button>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   </div>
@@ -127,12 +172,26 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { supabase } from '@/services/supabase'
+import SidebarMenu from '@/components/SidebarMenu.vue'
+import { formatCurrency, formatDate } from '@/utils/formatters'
 
 export default {
   name: 'ReportsView',
+  components: {
+    SidebarMenu
+  },
   setup() {
     const orders = ref([])
     const loading = ref(true)
+    const showMobileSidebar = ref(false)
+    
+    // الحصول على بيانات المستخدم الحالي من التخزين المحلي
+    const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+    
+    // تبديل حالة القائمة الجانبية للجوال
+    const toggleSidebar = () => {
+      showMobileSidebar.value = !showMobileSidebar.value
+    }
     
     const filters = reactive({
       dateFrom: '',
@@ -155,6 +214,13 @@ export default {
         const { data: { session } } = await supabase.auth.getSession()
         
         if (!session) {
+          loading.value = false
+          return
+        }
+        
+        // التحقق من وجود معرف المستخدم
+        if (!session.user || !session.user.id) {
+          console.error('معرف المستخدم غير متوفر')
           loading.value = false
           return
         }
@@ -270,8 +336,12 @@ export default {
       loading,
       filters,
       summary,
+      user,
+      showMobileSidebar,
+      toggleSidebar,
       applyFilters,
       formatDate,
+      formatCurrency,
       getStatusText,
       getStatusClass,
       printReport

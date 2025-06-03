@@ -76,47 +76,61 @@ export const authService = {
   },
 
   // إنشاء مستخدم جديد
-  async createUser(email, password, userData) {
+  async createUser(userData) {
     // التحقق من صلاحيات المستخدم الحالي
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
     if (!['admin', 'sales_manager'].includes(currentUser.role)) {
       throw new Error('ليس لديك صلاحية لإنشاء مستخدمين جدد')
     }
 
-    // إنشاء المستخدم في نظام المصادقة
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
-    })
-
-    if (error) throw error
-
-    // إنشاء سجل المستخدم في جدول المستخدمين
-    const { data: newUser, error: userError } = await supabase
-      .from('users')
-      .insert([
-        {
-          id: data.user.id,
-          email: email,
-          name: userData.name,
-          role: userData.role,
-          phone: userData.phone,
-          address: userData.address,
-          status: userData.status
+    try {
+      const email = userData.email;
+      const password = userData.password;
+      
+      // استخدام signUp مباشرة لإنشاء المستخدم
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+            email: email
+          }
         }
-      ])
-      .select()
-      .single()
+      })
 
-    if (userError) {
-      // إذا فشل إنشاء سجل المستخدم، قم بحذف المستخدم من نظام المصادقة
-      await supabase.auth.admin.deleteUser(data.user.id)
-      throw userError
-    }
+      if (signUpError) throw signUpError
 
-    return {
-      user: newUser
+      // إنشاء سجل المستخدم في جدول المستخدمين
+      const { data: newUser, error: userError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: signUpData.user.id,
+            email: email,
+            name: userData.name,
+            role: userData.role,
+            phone: userData.phone,
+            address: userData.address,
+            status: userData.status || 'active'
+          }
+        ])
+        .select()
+        .single()
+
+      if (userError) throw userError
+
+      // إزالة محاولة تفعيل المستخدم تلقائياً لأن وظيفة RPC غير متوفرة
+      // تم إزالة استدعاء confirm_user لأنه يسبب خطأ 404
+
+      // تحديث قائمة المستخدمين في الواجهة
+      return {
+        user: newUser
+      }
+    } catch (error) {
+      console.error('خطأ في إنشاء المستخدم:', error)
+      throw error
     }
   },
 
@@ -179,11 +193,9 @@ export const authService = {
       throw new Error('لا يمكن لمدير المبيعات حذف مدير مبيعات آخر')
     }
 
-    // حذف المستخدم من نظام المصادقة
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-    if (authError) throw authError
-
-    // حذف سجل المستخدم من جدول المستخدمين
+    // حذف سجل المستخدم من جدول المستخدمين فقط
+    // ملاحظة: لا يمكننا حذف المستخدم من نظام المصادقة لأننا لا نملك صلاحيات admin
+    // يجب حذف المستخدم يدوياً من لوحة تحكم Supabase إذا لزم الأمر
     const { error } = await supabase
       .from('users')
       .delete()
@@ -191,7 +203,7 @@ export const authService = {
 
     if (error) throw error
 
-    return { success: true }
+    return { success: true, message: 'تم حذف المستخدم من النظام. لحذفه بشكل كامل من نظام المصادقة، يرجى استخدام لوحة تحكم Supabase.' }
   },
 
   // إعادة تعيين كلمة المرور
@@ -211,6 +223,35 @@ export const authService = {
     if (error) throw error
 
     return { success: true }
+  },
+  
+  // تحديث كلمة مرور المستخدم
+  async updateUserPassword(userId, newPassword) {
+    // التحقق من صلاحيات المستخدم الحالي
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
+      throw new Error('ليس لديك صلاحية لتحديث كلمات المرور')
+    }
+
+    // التحقق من طول كلمة المرور
+    if (newPassword.length < 6) {
+      throw new Error('يجب أن تكون كلمة المرور 6 أحرف على الأقل')
+    }
+
+    try {
+      // تحديث كلمة المرور باستخدام API المناسبة
+      const { error } = await supabase.auth.admin.updateUserById(
+        userId,
+        { password: newPassword }
+      )
+
+      if (error) throw error
+
+      return { success: true, error: null }
+    } catch (error) {
+      console.error('خطأ في تحديث كلمة المرور:', error)
+      return { success: false, error }
+    }
   },
 
   // التحقق من حالة المصادقة

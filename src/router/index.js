@@ -16,6 +16,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/confirm-account',
+    name: 'confirm-account',
+    component: () => import('@/views/ConfirmAccountView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),
@@ -43,6 +49,12 @@ const routes = [
     path: '/orders/:id',
     name: 'order-details',
     component: () => import('@/views/OrderDetailsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/orders/edit/:id',
+    name: 'edit-order',
+    component: () => import('@/views/EditOrderView.vue'),
     meta: { requiresAuth: true }
   },
   {

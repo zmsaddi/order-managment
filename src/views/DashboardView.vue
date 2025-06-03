@@ -3,75 +3,7 @@
     <!-- القائمة الجانبية والشريط العلوي -->
     <div class="flex h-screen overflow-hidden">
       <!-- القائمة الجانبية -->
-      <aside class="bg-sky-800 text-white w-64 flex-shrink-0 hidden md:block">
-        <div class="p-4 border-b border-sky-700">
-          <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
-        </div>
-        <nav class="mt-4">
-          <ul class="space-y-1">
-            <li>
-              <router-link to="/dashboard" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/dashboard' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                  </svg>
-                </span>
-                <span>لوحة التحكم</span>
-              </router-link>
-            </li>
-            <li v-if="isAdmin">
-              <router-link to="/users" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/users' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                  </svg>
-                </span>
-                <span>المستخدمين</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/orders" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/orders' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>الطلبات</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/reports" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/reports' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>التقارير</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/profile" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/profile' }">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>الملف الشخصي</span>
-              </router-link>
-            </li>
-            <li>
-              <button @click="logout" class="w-full flex items-center px-4 py-3 hover:bg-sky-700 transition-colors text-left">
-                <span class="ml-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-                <span>تسجيل الخروج</span>
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+      <SidebarMenu :user="user" />
       
       <!-- المحتوى الرئيسي -->
       <div class="flex-1 flex flex-col overflow-hidden">
@@ -89,90 +21,13 @@
             <div class="flex items-center">
               <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
               <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
-                {{ user.name.charAt(0) }}
+                {{ user.name ? user.name.charAt(0) : 'U' }}
               </div>
             </div>
           </div>
         </header>
         
-        <!-- القائمة الجانبية للجوال -->
-        <div v-if="showMobileSidebar" class="fixed inset-0 z-20 md:hidden">
-          <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
-          <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
-            <div class="p-4 border-b border-sky-700 flex justify-between items-center">
-              <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
-              <button @click="toggleSidebar">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <nav class="mt-4">
-              <ul class="space-y-1">
-                <li>
-                  <router-link to="/dashboard" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/dashboard' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                      </svg>
-                    </span>
-                    <span>لوحة التحكم</span>
-                  </router-link>
-                </li>
-                <li v-if="isAdmin">
-                  <router-link to="/users" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/users' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                      </svg>
-                    </span>
-                    <span>المستخدمين</span>
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/orders" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/orders' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>الطلبات</span>
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/reports" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/reports' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>التقارير</span>
-                  </router-link>
-                </li>
-                <li>
-                  <router-link to="/profile" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/profile' }" @click="toggleSidebar">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>الملف الشخصي</span>
-                  </router-link>
-                </li>
-                <li>
-                  <button @click="logout" class="w-full flex items-center px-4 py-3 hover:bg-sky-700 transition-colors text-left">
-                    <span class="ml-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
-                      </svg>
-                    </span>
-                    <span>تسجيل الخروج</span>
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        </div>
+        <!-- تم إزالة القائمة الجانبية للجوال من هنا لأنها موجودة الآن في مكون SidebarMenu.vue -->
         
         <!-- محتوى الصفحة -->
         <main class="flex-1 overflow-y-auto p-4">
@@ -223,7 +78,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <p class="text-gray-500 text-sm">إجمالي المبيعات</p>
-                  <h3 class="text-2xl font-bold text-gray-800">{{ stats.totalSales }} ر.س</h3>
+                  <h3 class="text-2xl font-bold text-gray-800">{{ formatCurrency(stats.totalSales) }}</h3>
                 </div>
                 <div class="bg-purple-100 p-3 rounded-full">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -235,73 +90,163 @@
           </div>
           
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- الطلبات الأخيرة -->
+            <!-- الطلبات حسب الحالة -->
             <div class="card bg-white rounded-lg shadow-sm">
               <div class="border-b border-gray-200 p-4">
-                <h2 class="text-lg font-semibold text-gray-800">الطلبات الأخيرة</h2>
+                <h2 class="text-lg font-semibold text-gray-800">الطلبات حسب الحالة</h2>
               </div>
               <div class="p-4">
                 <div v-if="loading" class="text-center py-4">
                   <p>جاري تحميل البيانات...</p>
                 </div>
-                <div v-else-if="recentOrders.length === 0" class="text-center py-4">
-                  <p>لا توجد طلبات حديثة</p>
-                </div>
-                <div v-else class="overflow-x-auto">
-                  <table class="w-full">
-                    <thead>
-                      <tr class="bg-gray-50">
-                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رقم الطلب</th>
-                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العميل</th>
-                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
-                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                      <tr v-for="order in recentOrders" :key="order.id" class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm text-gray-900">#{{ order.id }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ order.customer_name }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ order.total }} ر.س</td>
-                        <td class="px-4 py-3 text-sm">
-                          <span :class="getStatusClass(order.status)" class="px-2 py-1 text-xs rounded-full">
-                            {{ getStatusText(order.status) }}
-                          </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(order.created_at) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div class="mt-4 text-center">
-                  <router-link to="/orders" class="text-sky-600 hover:text-sky-800 text-sm font-medium">
-                    عرض جميع الطلبات
-                  </router-link>
+                <div v-else>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- الطلبات الجديدة -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                      <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold text-yellow-800">طلبات جديدة</h3>
+                        <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.new ? ordersByStatus.new.length : 0 }}</span>
+                      </div>
+                      <div v-if="!ordersByStatus.new || ordersByStatus.new.length === 0" class="text-center py-2 text-sm text-gray-500">
+                        لا توجد طلبات
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div v-for="order in ordersByStatus.new.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-yellow-200 text-sm">
+                          <div class="flex justify-between">
+                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
+                              #{{ String(order.id).substring(0, 8) }}
+                            </router-link>
+                            <span>{{ formatCurrency(order.total) }}</span>
+                          </div>
+                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
+                        </div>
+                        <div v-if="ordersByStatus.new && ordersByStatus.new.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                          <router-link :to="{ path: '/orders', query: { status: 'new' } }">
+                            عرض {{ ordersByStatus.new.length - 3 }} طلبات أخرى
+                          </router-link>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- الطلبات المكتملة بانتظار التسليم -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold text-blue-800">بانتظار التسليم</h3>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.completed_pending_delivery ? ordersByStatus.completed_pending_delivery.length : 0 }}</span>
+                      </div>
+                      <div v-if="!ordersByStatus.completed_pending_delivery || ordersByStatus.completed_pending_delivery.length === 0" class="text-center py-2 text-sm text-gray-500">
+                        لا توجد طلبات
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div v-for="order in ordersByStatus.completed_pending_delivery.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-blue-200 text-sm">
+                          <div class="flex justify-between">
+                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
+                              #{{ String(order.id).substring(0, 8) }}
+                            </router-link>
+                            <span>{{ formatCurrency(order.total) }}</span>
+                          </div>
+                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
+                        </div>
+                        <div v-if="ordersByStatus.completed_pending_delivery && ordersByStatus.completed_pending_delivery.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                          <router-link :to="{ path: '/orders', query: { status: 'completed_pending_delivery' } }">
+                            عرض {{ ordersByStatus.completed_pending_delivery.length - 3 }} طلبات أخرى
+                          </router-link>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- الطلبات المسلمة -->
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold text-green-800">تم التسليم</h3>
+                        <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.delivered ? ordersByStatus.delivered.length : 0 }}</span>
+                      </div>
+                      <div v-if="!ordersByStatus.delivered || ordersByStatus.delivered.length === 0" class="text-center py-2 text-sm text-gray-500">
+                        لا توجد طلبات
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div v-for="order in ordersByStatus.delivered.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-green-200 text-sm">
+                          <div class="flex justify-between">
+                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
+                              #{{ String(order.id).substring(0, 8) }}
+                            </router-link>
+                            <span>{{ formatCurrency(order.total) }}</span>
+                          </div>
+                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
+                        </div>
+                        <div v-if="ordersByStatus.delivered && ordersByStatus.delivered.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                          <router-link :to="{ path: '/orders', query: { status: 'delivered' } }">
+                            عرض {{ ordersByStatus.delivered.length - 3 }} طلبات أخرى
+                          </router-link>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- الطلبات الملغاة -->
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold text-red-800">ملغاة</h3>
+                        <span class="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded-full">{{ ordersByStatus.cancelled ? ordersByStatus.cancelled.length : 0 }}</span>
+                      </div>
+                      <div v-if="!ordersByStatus.cancelled || ordersByStatus.cancelled.length === 0" class="text-center py-2 text-sm text-gray-500">
+                        لا توجد طلبات
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div v-for="order in ordersByStatus.cancelled.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-red-200 text-sm">
+                          <div class="flex justify-between">
+                            <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
+                              #{{ String(order.id).substring(0, 8) }}
+                            </router-link>
+                            <span>{{ formatCurrency(order.total) }}</span>
+                          </div>
+                          <div class="text-gray-500 text-xs mt-1">{{ order.customer_name }}</div>
+                        </div>
+                        <div v-if="ordersByStatus.cancelled && ordersByStatus.cancelled.length > 3" class="text-center text-xs text-sky-600 hover:text-sky-800">
+                          <router-link :to="{ path: '/orders', query: { status: 'cancelled' } }">
+                            عرض {{ ordersByStatus.cancelled.length - 3 }} طلبات أخرى
+                          </router-link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             
-            <!-- أداء المندوبين -->
-            <div v-if="isAdmin" class="card bg-white rounded-lg shadow-sm">
+            <!-- أداء المبيعات -->
+            <div class="card bg-white rounded-lg shadow-sm">
               <div class="border-b border-gray-200 p-4">
-                <h2 class="text-lg font-semibold text-gray-800">أداء المندوبين</h2>
+                <h2 class="text-lg font-semibold text-gray-800">أداء المبيعات</h2>
               </div>
               <div class="p-4">
                 <div v-if="loading" class="text-center py-4">
                   <p>جاري تحميل البيانات...</p>
                 </div>
-                <div v-else-if="salesReps.length === 0" class="text-center py-4">
-                  <p>لا يوجد مندوبين</p>
-                </div>
                 <div v-else>
-                  <div v-for="rep in salesReps" :key="rep.id" class="mb-4">
-                    <div class="flex justify-between items-center mb-1">
-                      <span class="text-sm font-medium text-gray-700">{{ rep.name }}</span>
-                      <span class="text-sm text-gray-600">{{ rep.total_sales }} ر.س</span>
+                  <div class="mb-4">
+                    <h3 class="text-sm font-medium text-gray-500">المبيعات الشهرية</h3>
+                    <p class="text-2xl font-bold text-gray-800">{{ formatCurrency(stats.monthlySales) }}</p>
+                  </div>
+                  
+                  <div class="mb-4">
+                    <h3 class="text-sm font-medium text-gray-500">متوسط قيمة الطلب</h3>
+                    <p class="text-2xl font-bold text-gray-800">{{ formatCurrency(stats.averageOrderValue) }}</p>
+                  </div>
+                  
+                  <div class="mb-4">
+                    <h3 class="text-sm font-medium text-gray-500">أعلى قيمة طلب</h3>
+                    <p class="text-2xl font-bold text-gray-800">{{ formatCurrency(stats.highestOrderValue) }}</p>
+                  </div>
+                  
+                  <div class="mt-6">
+                    <h3 class="text-sm font-medium text-gray-500 mb-2">توزيع حالات الطلبات</h3>
+                    <div class="flex items-center">
+                      <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-green-600 h-2.5 rounded-full" :style="{ width: `${stats.newOrdersPercentage}%` }"></div>
+                      </div>
+                      <span class="text-sm text-gray-500 mr-2">{{ stats.newOrdersPercentage }}%</span>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                      <div class="bg-sky-600 h-2.5 rounded-full" :style="{ width: `${rep.percentage}%` }"></div>
-                    </div>
+                    <p class="text-xs text-gray-500 mt-1">نسبة الطلبات الجديدة</p>
                   </div>
                 </div>
               </div>
@@ -314,27 +259,25 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '@/services/supabase'
 import { authService } from '@/services/auth.service'
+import { useRouter } from 'vue-router'
+import SidebarMenu from '@/components/SidebarMenu.vue'
+import { formatCurrency, formatDate } from '@/utils/formatters'
 
 export default {
   name: 'DashboardView',
+  components: {
+    SidebarMenu
+  },
   setup() {
     const router = useRouter()
     const showMobileSidebar = ref(false)
     const loading = ref(true)
     const recentOrders = ref([])
-    const salesReps = ref([])
-    const stats = ref({
-      totalOrders: 0,
-      newOrders: 0,
-      completedOrders: 0,
-      totalSales: 0
-    })
     
-    // الحصول على بيانات المستخدم من التخزين المحلي
+    // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
     
     // التحقق من صلاحيات المستخدم
@@ -342,20 +285,21 @@ export default {
       return ['admin', 'sales_manager'].includes(user.value.role)
     })
     
+    // إحصائيات لوحة التحكم
+    const stats = ref({
+      totalOrders: 0,
+      newOrders: 0,
+      completedOrders: 0,
+      totalSales: 0,
+      monthlySales: 0,
+      averageOrderValue: 0,
+      highestOrderValue: 0,
+      newOrdersPercentage: 0
+    })
+    
     // تبديل حالة القائمة الجانبية للجوال
     const toggleSidebar = () => {
       showMobileSidebar.value = !showMobileSidebar.value
-    }
-    
-    // تسجيل الخروج
-    const logout = async () => {
-      try {
-        await authService.logout()
-        localStorage.removeItem('user')
-        router.push({ name: 'login' })
-      } catch (error) {
-        console.error('خطأ في تسجيل الخروج:', error)
-      }
     }
     
     // الحصول على نص حالة الطلب
@@ -380,103 +324,172 @@ export default {
       return statusClassMap[status] || 'bg-gray-100 text-gray-800'
     }
     
-    // تنسيق التاريخ
-    const formatDate = (dateString) => {
-      const date = new Date(dateString)
-      return new Intl.DateTimeFormat('ar-SA', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }).format(date)
-    }
+    // متغيرات الطلبات حسب الحالة
+    const ordersByStatus = ref({
+      new: [],
+      completed_pending_delivery: [],
+      delivered: [],
+      cancelled: []
+    })
     
-    // جلب البيانات
-    const fetchData = async () => {
+    // جلب الطلبات الأخيرة
+    const fetchRecentOrders = async () => {
       try {
-        loading.value = true
-        
-        // جلب الإحصائيات
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
-          .select('id, status, total')
-          .order('created_at', { ascending: false })
-        
-        if (ordersError) throw ordersError
-        
-        // حساب الإحصائيات
-        if (ordersData) {
-          stats.value.totalOrders = ordersData.length
-          stats.value.newOrders = ordersData.filter(order => order.status === 'new').length
-          stats.value.completedOrders = ordersData.filter(order => ['completed_pending_delivery', 'delivered'].includes(order.status)).length
-          stats.value.totalSales = ordersData.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0).toFixed(2)
-        }
-        
-        // جلب الطلبات الأخيرة
-        let query = supabase
+        const { data, error } = await supabase
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(5)
+          .limit(10)
         
-        // إذا كان المستخدم مندوباً، فقط اعرض طلباته
-        if (user.value.role === 'representative') {
-          query = query.eq('sales_rep_id', user.value.id)
-        }
+        if (error) throw error
         
-        const { data: recentOrdersData, error: recentOrdersError } = await query
+        recentOrders.value = data || []
         
-        if (recentOrdersError) throw recentOrdersError
-        
-        recentOrders.value = recentOrdersData || []
-        
-        // جلب أداء المندوبين (للمدراء فقط)
-        if (isAdmin.value) {
-          const { data: repsData, error: repsError } = await supabase
-            .from('users')
-            .select('id, name, role')
-            .eq('role', 'representative')
-          
-          if (repsError) throw repsError
-          
-          if (repsData) {
-            // جلب إجمالي المبيعات لكل مندوب
-            const repsWithSales = await Promise.all(repsData.map(async (rep) => {
-              const { data: repOrders, error: repOrdersError } = await supabase
-                .from('orders')
-                .select('total')
-                .eq('sales_rep_id', rep.id)
-              
-              if (repOrdersError) throw repOrdersError
-              
-              const totalSales = repOrders
-                ? repOrders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0)
-                : 0
-              
-              return {
-                ...rep,
-                total_sales: totalSales.toFixed(2),
-                total_orders: repOrders ? repOrders.length : 0
-              }
-            }))
-            
-            // حساب النسبة المئوية لكل مندوب
-            const maxSales = Math.max(...repsWithSales.map(rep => parseFloat(rep.total_sales) || 0))
-            
-            salesReps.value = repsWithSales.map(rep => ({
-              ...rep,
-              percentage: maxSales > 0 ? (parseFloat(rep.total_sales) / maxSales) * 100 : 0
-            }))
-          }
-        }
+        // تحديث الطلبات حسب الحالة
+        await fetchOrdersByStatus()
       } catch (error) {
-        console.error('خطأ في جلب البيانات:', error)
-      } finally {
-        loading.value = false
+        console.error('خطأ في جلب الطلبات الأخيرة:', error)
+        recentOrders.value = []
       }
     }
     
-    onMounted(() => {
-      fetchData()
+    // جلب الطلبات حسب الحالة
+    const fetchOrdersByStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false })
+        
+        if (error) throw error
+        
+        // تصنيف الطلبات حسب الحالة
+        ordersByStatus.value = {
+          new: data.filter(order => order.status === 'new') || [],
+          completed_pending_delivery: data.filter(order => order.status === 'completed_pending_delivery') || [],
+          delivered: data.filter(order => order.status === 'delivered') || [],
+          cancelled: data.filter(order => order.status === 'cancelled') || []
+        }
+      } catch (error) {
+        console.error('خطأ في جلب الطلبات حسب الحالة:', error)
+        // تهيئة القيم الافتراضية في حالة الخطأ
+        ordersByStatus.value = {
+          new: [],
+          completed_pending_delivery: [],
+          delivered: [],
+          cancelled: []
+        }
+      }
+    }
+    
+    // جلب إحصائيات لوحة التحكم
+    const fetchStats = async () => {
+      try {
+        // إجمالي الطلبات
+        const { count: totalOrders, error: totalError } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+        
+        if (totalError) throw totalError
+        
+        // الطلبات الجديدة
+        const { count: newOrders, error: newError } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'new')
+        
+        if (newError) throw newError
+        
+        // الطلبات المكتملة
+        const { count: completedOrders, error: completedError } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .in('status', ['completed_pending_delivery', 'delivered'])
+        
+        if (completedError) throw completedError
+        
+        // إجمالي المبيعات
+        const { data: salesData, error: salesError } = await supabase
+          .from('orders')
+          .select('total')
+        
+        if (salesError) throw salesError
+        
+        const totalSales = salesData.reduce((sum, order) => sum + parseFloat(order.total || 0), 0)
+        
+        // المبيعات الشهرية
+        const currentDate = new Date()
+        const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString()
+        
+        const { data: monthlySalesData, error: monthlySalesError } = await supabase
+          .from('orders')
+          .select('total')
+          .gte('created_at', firstDayOfMonth)
+        
+        if (monthlySalesError) throw monthlySalesError
+        
+        const monthlySales = monthlySalesData.reduce((sum, order) => sum + parseFloat(order.total || 0), 0)
+        
+        // متوسط قيمة الطلب
+        const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0
+        
+        // أعلى قيمة طلب
+        const highestOrderValue = salesData.length > 0 ? Math.max(...salesData.map(order => parseFloat(order.total || 0))) : 0
+        
+        // نسبة الطلبات الجديدة
+        const newOrdersPercentage = totalOrders > 0 ? Math.round((newOrders / totalOrders) * 100) : 0
+        
+        stats.value = {
+          totalOrders,
+          newOrders,
+          completedOrders,
+          totalSales,
+          monthlySales,
+          averageOrderValue,
+          highestOrderValue,
+          newOrdersPercentage
+        }
+      } catch (error) {
+        console.error('خطأ في جلب الإحصائيات:', error)
+        // تهيئة القيم الافتراضية في حالة الخطأ
+        stats.value = {
+          totalOrders: 0,
+          newOrders: 0,
+          completedOrders: 0,
+          totalSales: 0,
+          monthlySales: 0,
+          averageOrderValue: 0,
+          highestOrderValue: 0,
+          newOrdersPercentage: 0
+        }
+      }
+    }
+    
+    // تسجيل الخروج
+    const logout = async () => {
+      try {
+        await authService.logout()
+        localStorage.removeItem('user')
+        router.push('/login')
+      } catch (error) {
+        console.error('خطأ في تسجيل الخروج:', error)
+      }
+    }
+    
+    // تهيئة الصفحة
+    onMounted(async () => {
+      loading.value = true
+      
+      try {
+        await Promise.all([
+          fetchRecentOrders(),
+          fetchStats()
+        ])
+      } catch (error) {
+        console.error('خطأ في تهيئة الصفحة:', error)
+      } finally {
+        loading.value = false
+      }
     })
     
     return {
@@ -484,15 +497,20 @@ export default {
       isAdmin,
       showMobileSidebar,
       toggleSidebar,
-      logout,
       loading,
       recentOrders,
-      salesReps,
       stats,
+      ordersByStatus,
       getStatusText,
       getStatusClass,
+      logout,
+      formatCurrency,
       formatDate
     }
   }
 }
 </script>
+
+<style scoped>
+/* تنسيقات إضافية إذا لزم الأمر */
+</style>
