@@ -62,7 +62,7 @@
                 <!-- بيانات العميل -->
                 <div class="col-span-1 md:col-span-2">
                   <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">بيانات العميل</h2>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <label for="customer_name" class="form-label">اسم العميل <span class="text-red-500">*</span></label>
                       <input 
@@ -550,7 +550,7 @@ export default {
 }
 
 .form-input {
-  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm;
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm px-4 py-2;
 }
 
 .btn {

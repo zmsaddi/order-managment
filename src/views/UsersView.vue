@@ -302,6 +302,19 @@
                     </div>
                     
                     <div class="mb-4">
+                      <label for="edit-password" class="form-label">كلمة المرور (اتركها فارغة إذا لم ترغب في تغييرها)</label>
+                      <input 
+                        type="password" 
+                        id="edit-password" 
+                        v-model="editingUser.password" 
+                        class="form-input text-center"
+                        placeholder="أدخل كلمة المرور الجديدة"
+                        minlength="6"
+                      />
+                      <p class="text-xs text-gray-500 mt-1 text-center">يجب أن تكون كلمة المرور 6 أحرف على الأقل</p>
+                    </div>
+                    
+                    <div class="mb-4">
                       <label for="edit-role" class="form-label">الدور <span class="text-red-500">*</span></label>
                       <select 
                         id="edit-role" 
@@ -623,7 +636,8 @@ export default {
       name: '',
       email: '',
       phone: '',
-      role: ''
+      role: '',
+      password: ''
     })
     
     // فتح نافذة تعديل المستخدم
@@ -642,6 +656,7 @@ export default {
       submitting.value = true
       
       try {
+        // تحديث بيانات المستخدم الأساسية
         const { error } = await supabase
           .from('users')
           .update({
@@ -652,6 +667,16 @@ export default {
           .eq('id', editingUser.value.id)
         
         if (error) throw error
+        
+        // إذا تم إدخال كلمة مرور جديدة، قم بتحديثها
+        if (editingUser.value.password && editingUser.value.password.length >= 6) {
+          const { error: passwordError } = await authService.updateUserPassword(
+            editingUser.value.id,
+            editingUser.value.password
+          )
+          
+          if (passwordError) throw passwordError
+        }
         
         // إغلاق النافذة وإعادة تحميل المستخدمين
         closeEditUserModal()

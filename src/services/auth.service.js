@@ -228,6 +228,35 @@ export const authService = {
 
     return { success: true }
   },
+  
+  // تحديث كلمة مرور المستخدم
+  async updateUserPassword(userId, newPassword) {
+    // التحقق من صلاحيات المستخدم الحالي
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
+      throw new Error('ليس لديك صلاحية لتحديث كلمات المرور')
+    }
+
+    // التحقق من طول كلمة المرور
+    if (newPassword.length < 6) {
+      throw new Error('يجب أن تكون كلمة المرور 6 أحرف على الأقل')
+    }
+
+    try {
+      // تحديث كلمة المرور باستخدام API المناسبة
+      const { error } = await supabase.auth.admin.updateUserById(
+        userId,
+        { password: newPassword }
+      )
+
+      if (error) throw error
+
+      return { success: true, error: null }
+    } catch (error) {
+      console.error('خطأ في تحديث كلمة المرور:', error)
+      return { success: false, error }
+    }
+  },
 
   // التحقق من حالة المصادقة
   async checkAuth() {

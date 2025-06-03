@@ -128,7 +128,7 @@
                         <div v-for="order in ordersByStatus.new.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-yellow-200 text-sm">
                           <div class="flex justify-between">
                             <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ order.id.substring(0, 8) }}
+                              #{{ String(order.id).substring(0, 8) }}
                             </router-link>
                             <span>{{ formatCurrency(order.total) }}</span>
                           </div>
@@ -155,7 +155,7 @@
                         <div v-for="order in ordersByStatus.completed_pending_delivery.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-blue-200 text-sm">
                           <div class="flex justify-between">
                             <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ order.id.substring(0, 8) }}
+                              #{{ String(order.id).substring(0, 8) }}
                             </router-link>
                             <span>{{ formatCurrency(order.total) }}</span>
                           </div>
@@ -182,7 +182,7 @@
                         <div v-for="order in ordersByStatus.delivered.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-green-200 text-sm">
                           <div class="flex justify-between">
                             <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ order.id.substring(0, 8) }}
+                              #{{ String(order.id).substring(0, 8) }}
                             </router-link>
                             <span>{{ formatCurrency(order.total) }}</span>
                           </div>
@@ -209,7 +209,7 @@
                         <div v-for="order in ordersByStatus.cancelled.slice(0, 3)" :key="order.id" class="bg-white p-2 rounded border border-red-200 text-sm">
                           <div class="flex justify-between">
                             <router-link :to="`/orders/${order.id}`" class="text-sky-600 hover:text-sky-900 font-medium">
-                              #{{ order.id.substring(0, 8) }}
+                              #{{ String(order.id).substring(0, 8) }}
                             </router-link>
                             <span>{{ formatCurrency(order.total) }}</span>
                           </div>
