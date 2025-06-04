@@ -150,26 +150,31 @@
                     <!-- عرض المنتجات من قائمة items إذا كانت موجودة -->
                     <template v-if="order.items && order.items.length > 0">
                       <tr v-for="(item, index) in order.items" :key="index" class="hover:bg-gray-50">
-                        <td class="border border-gray-300 px-4 py-2">{{ item.name || item.description || 'غير محدد' }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ item.quantity || 0 }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(item.price || 0) }}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                          <div class="font-medium">{{ item.name || item.description || 'غير محدد' }}</div>
+                          <div v-if="item.description && item.name !== item.description" class="text-sm text-gray-600 mt-1">{{ item.description }}</div>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-medium">{{ item.quantity || 0 }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-medium text-blue-600">{{ formatCurrency(item.price || 0) }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ (item.tax_rate || order.tax_rate || 15) }}%</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(((item.quantity || 0) * (item.price || 0)) * ((item.tax_rate || order.tax_rate || 15) / 100)) }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center font-semibold">{{ formatCurrency(((item.quantity || 0) * (item.price || 0)) * (1 + ((item.tax_rate || order.tax_rate || 15) / 100))) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-green-600">{{ formatCurrency(((item.quantity || 0) * (item.price || 0)) * (1 + ((item.tax_rate || order.tax_rate || 15) / 100))) }}</td>
                       </tr>
                     </template>
                     
                     <!-- عرض بيانات المنتج الواحد إذا لم تكن هناك قائمة منتجات -->
                     <template v-else>
                       <tr class="hover:bg-gray-50">
-                        <td class="border border-gray-300 px-4 py-2">{{ order.product_description || 'وصف المنتج غير متوفر' }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ order.quantity || 1 }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.unit_price || 0) }}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                          <div class="font-medium">{{ order.product_description || 'وصف المنتج غير متوفر' }}</div>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-medium">{{ order.quantity || 1 }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-medium text-blue-600">{{ formatCurrency(order.unit_price || 0) }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.subtotal || 0) }}</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ order.tax_rate || 15 }}%</td>
                         <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.tax_amount || 0) }}</td>
-                        <td class="border border-gray-300 px-4 py-2 text-center font-semibold">{{ formatCurrency(order.total || 0) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-green-600">{{ formatCurrency(order.total || 0) }}</td>
                       </tr>
                     </template>
                   </tbody>

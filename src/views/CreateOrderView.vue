@@ -159,7 +159,21 @@
               </div>
               
               <div>
-                <label for="tax" class="form-label">الضريبة (15%)</label>
+                <label for="tax-rate" class="form-label">نسبة الضريبة (%)</label>
+                <input 
+                  type="number" 
+                  id="tax-rate" 
+                  v-model.number="order.taxRate" 
+                  class="form-input"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  @input="calculateOrderTotal"
+                />
+              </div>
+              
+              <div>
+                <label for="tax" class="form-label">قيمة الضريبة</label>
                 <input 
                   type="text" 
                   id="tax" 
@@ -240,6 +254,7 @@ export default {
         }
       ],
       subtotal: 0,
+      taxRate: 15, // نسبة الضريبة القابلة للتعديل
       tax: 0,
       total: 0,
       notes: '',
@@ -256,7 +271,8 @@ export default {
     // حساب إجمالي الطلب
     const calculateOrderTotal = () => {
       const subtotal = order.value.items.reduce((sum, item) => sum + (item.total || 0), 0)
-      const tax = subtotal * 0.15 // ضريبة 15%
+      const taxRate = (order.value.taxRate || 0) / 100 // تحويل النسبة المئوية إلى عدد عشري
+      const tax = subtotal * taxRate
       const total = subtotal + tax
       
       order.value.subtotal = subtotal
@@ -353,12 +369,12 @@ export default {
             total: Number(item.total)
           })),
           subtotal: Number(order.value.subtotal),
-          tax_rate: 15, // نسبة الضريبة الثابتة
+          tax_rate: Number(order.value.taxRate), // نسبة الضريبة القابلة للتعديل
           tax_amount: Number(order.value.tax),
           total: Number(order.value.total),
           notes: order.value.notes ? order.value.notes.trim() : '',
           status: order.value.status,
-          created_by: JSON.parse(localStorage.getItem('user') || '{}').id
+          sales_rep_id: JSON.parse(localStorage.getItem('user') || '{}').id
         }
         
         // إنشاء الطلب في قاعدة البيانات
