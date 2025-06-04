@@ -3,7 +3,11 @@
     <!-- القائمة الجانبية والشريط العلوي -->
     <div class="flex h-screen overflow-hidden">
       <!-- القائمة الجانبية -->
-      <SidebarMenu :user="user" />
+      <SidebarMenu 
+        :user="user" 
+        :mobile-open="mobileOpen"
+        @close="mobileOpen = false"
+      />
       
       <!-- المحتوى الرئيسي -->
       <div class="flex-1 flex flex-col overflow-hidden">
@@ -27,21 +31,6 @@
           </div>
         </header>
         
-        <!-- القائمة الجانبية للجوال -->
-        <div v-if="showMobileSidebar" class="fixed inset-0 z-20 md:hidden">
-          <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
-          <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
-            <div class="p-4 border-b border-sky-700 flex justify-between items-center">
-              <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
-              <button @click="toggleSidebar">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <SidebarMenu :user="user" mobile @item-click="toggleSidebar" />
-          </div>
-        </div>
         
         <!-- محتوى الصفحة -->
         <main class="flex-1 overflow-y-auto p-4">
@@ -183,14 +172,14 @@ export default {
   setup() {
     const orders = ref([])
     const loading = ref(true)
-    const showMobileSidebar = ref(false)
+    const mobileOpen = ref(false)
     
     // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
     
     // تبديل حالة القائمة الجانبية للجوال
     const toggleSidebar = () => {
-      showMobileSidebar.value = !showMobileSidebar.value
+      mobileOpen.value = !mobileOpen.value
     }
     
     const filters = reactive({
@@ -337,7 +326,7 @@ export default {
       filters,
       summary,
       user,
-      showMobileSidebar,
+      mobileOpen,
       toggleSidebar,
       applyFilters,
       formatDate,

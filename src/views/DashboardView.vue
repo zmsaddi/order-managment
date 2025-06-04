@@ -3,7 +3,11 @@
     <!-- القائمة الجانبية والشريط العلوي -->
     <div class="flex h-screen overflow-hidden">
       <!-- القائمة الجانبية -->
-      <SidebarMenu :user="user" />
+      <SidebarMenu 
+        :user="user" 
+        :mobile-open="mobileOpen"
+        @close="mobileOpen = false"
+      />
       
       <!-- المحتوى الرئيسي -->
       <div class="flex-1 flex flex-col overflow-hidden">
@@ -272,7 +276,7 @@ export default {
   },
   setup() {
     const router = useRouter()
-    const showMobileSidebar = ref(false)
+    const mobileOpen = ref(false)
     const loading = ref(true)
     const recentOrders = ref([])
     
@@ -318,7 +322,7 @@ export default {
     
     // تبديل حالة القائمة الجانبية للجوال
     const toggleSidebar = () => {
-      showMobileSidebar.value = !showMobileSidebar.value
+      mobileOpen.value = !mobileOpen.value
     }
     
     // الحصول على نص حالة الطلب
@@ -514,7 +518,7 @@ export default {
     return {
       user,
       isAdmin,
-      showMobileSidebar,
+      mobileOpen,
       toggleSidebar,
       loading,
       recentOrders,
