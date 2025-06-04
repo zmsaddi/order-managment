@@ -1,11 +1,18 @@
 <template><div>
           <div v-if="loading" class="text-center py-8">
-            <p>جاري تحميل البيانات...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600">جاري تحميل البيانات...</p>
           </div>
           
-          <div v-else-if="!order" class="text-center py-8">
-            <p>لم يتم العثور على الطلب</p>
-            <router-link to="/orders" class="btn btn-primary mt-4">العودة إلى الطلبات</router-link>
+          <div v-else-if="order === null && !loading" class="text-center py-8">
+            <div class="text-red-500 mb-4">
+              <svg class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">لم يتم العثور على الطلب</h3>
+            <p class="text-gray-600 mb-4">الطلب المطلوب غير موجود أو تم حذفه</p>
+            <router-link to="/orders" class="btn btn-primary">العودة إلى الطلبات</router-link>
           </div>
           
           <div v-else>
@@ -225,7 +232,7 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
-    const loading = ref(true)
+    const loading = ref(false)
     const order = ref(null)
     const salesRep = ref(null)
     const newStatus = ref('')
@@ -314,14 +321,10 @@ export default {
       loading.value = true
       
       try {
-        console.log('معرف الطلب من الرابط:', route.params.id)
-        console.log('نوع معرف الطلب:', typeof route.params.id)
+        // تحويل معرف الطلب إلى رقم صحيح
+        const orderId = Number(route.params.id)
         
-        // تحويل معرف الطلب إلى رقم
-        const orderId = parseInt(route.params.id)
-        console.log('معرف الطلب بعد التحويل:', orderId)
-        
-        if (isNaN(orderId)) {
+        if (!orderId || orderId <= 0) {
           throw new Error('معرف الطلب غير صحيح')
         }
         
@@ -331,9 +334,10 @@ export default {
           .eq('id', orderId)
           .single()
         
-        console.log('نتيجة الاستعلام:', { data, error })
-        
-        if (error) throw error
+        if (error) {
+          console.error('خطأ في الاستعلام:', error)
+          throw error
+        }
         
         if (!data) {
           throw new Error('لم يتم العثور على الطلب')
@@ -350,7 +354,7 @@ export default {
             .eq('id', data.sales_rep_id)
             .single()
           
-          if (!userError) {
+          if (!userError && userData) {
             salesRep.value = userData
           }
         }
