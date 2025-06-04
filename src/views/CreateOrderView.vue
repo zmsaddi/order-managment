@@ -20,35 +20,42 @@
             <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">بيانات العميل</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label for="customer-name" class="form-label">اسم العميل</label>
+                <label for="customer-name" class="form-label">اسم العميل <span class="text-red-500">*</span></label>
                 <input 
                   type="text" 
                   id="customer-name" 
                   v-model="order.customer_name" 
                   class="form-input"
                   required
+                  placeholder="أدخل اسم العميل الكامل"
+                  maxlength="100"
                 />
               </div>
               
               <div>
-                <label for="customer-phone" class="form-label">رقم الهاتف</label>
+                <label for="customer-phone" class="form-label">رقم الهاتف <span class="text-red-500">*</span></label>
                 <input 
                   type="tel" 
                   id="customer-phone" 
                   v-model="order.customer_phone" 
                   class="form-input"
                   required
+                  placeholder="مثال: 0501234567"
+                  pattern="[0-9+\-\s()]{8,15}"
+                  title="يرجى إدخال رقم هاتف صحيح (8-15 رقم)"
                 />
               </div>
               
               <div>
-                <label for="customer-address" class="form-label">العنوان</label>
+                <label for="customer-address" class="form-label">العنوان <span class="text-red-500">*</span></label>
                 <input 
                   type="text" 
                   id="customer-address" 
                   v-model="order.customer_address" 
                   class="form-input"
                   required
+                  placeholder="أدخل العنوان الكامل"
+                  maxlength="200"
                 />
               </div>
             </div>
@@ -61,39 +68,45 @@
             <div v-for="(item, index) in order.items" :key="index" class="border border-gray-200 rounded-lg p-4 mb-4">
               <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 <div>
-                  <label :for="`item-name-${index}`" class="form-label">اسم المنتج</label>
+                  <label :for="`item-name-${index}`" class="form-label">اسم المنتج <span class="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     :id="`item-name-${index}`" 
                     v-model="item.name" 
                     class="form-input"
                     required
+                    placeholder="أدخل اسم المنتج"
+                    maxlength="100"
                   />
                 </div>
                 
                 <div>
-                  <label :for="`item-quantity-${index}`" class="form-label">الكمية</label>
+                  <label :for="`item-quantity-${index}`" class="form-label">الكمية <span class="text-red-500">*</span></label>
                   <input 
                     type="number" 
                     :id="`item-quantity-${index}`" 
                     v-model.number="item.quantity" 
                     class="form-input"
                     min="1"
+                    max="9999"
                     required
+                    placeholder="1"
                     @input="calculateItemTotal(index)"
                   />
                 </div>
                 
                 <div>
-                  <label :for="`item-price-${index}`" class="form-label">السعر</label>
+                  <label :for="`item-price-${index}`" class="form-label">السعر (ريال) <span class="text-red-500">*</span></label>
                   <input 
                     type="number" 
                     :id="`item-price-${index}`" 
                     v-model.number="item.price" 
                     class="form-input"
-                    min="0"
+                    min="0.01"
+                    max="999999"
                     step="0.01"
                     required
+                    placeholder="0.00"
                     @input="calculateItemTotal(index)"
                   />
                 </div>
@@ -274,32 +287,84 @@ export default {
       try {
         submitting.value = true
         
-        // التحقق من صحة البيانات
-        if (!order.value.customer_name || !order.value.customer_phone || !order.value.customer_address) {
-          alert('يرجى ملء جميع بيانات العميل')
+        // التحقق من صحة بيانات العميل
+        if (!order.value.customer_name || order.value.customer_name.trim() === '') {
+          alert('يرجى إدخال اسم العميل')
           return
         }
         
-        if (order.value.items.some(item => !item.name || !item.quantity || !item.price)) {
-          alert('يرجى ملء جميع بيانات المنتجات')
+        if (!order.value.customer_phone || order.value.customer_phone.trim() === '') {
+          alert('يرجى إدخال رقم هاتف العميل')
           return
+        }
+        
+        if (!order.value.customer_address || order.value.customer_address.trim() === '') {
+          alert('يرجى إدخال عنوان العميل')
+          return
+        }
+        
+        // التحقق من صحة رقم الهاتف (يجب أن يحتوي على أرقام فقط ويكون بطول مناسب)
+        const phoneRegex = /^[0-9+\-\s()]{8,15}$/
+        if (!phoneRegex.test(order.value.customer_phone.trim())) {
+          alert('يرجى إدخال رقم هاتف صحيح (8-15 رقم)')
+          return
+        }
+        
+        // التحقق من صحة بيانات المنتجات
+        if (!order.value.items || order.value.items.length === 0) {
+          alert('يرجى إضافة منتج واحد على الأقل')
+          return
+        }
+        
+        for (let i = 0; i < order.value.items.length; i++) {
+          const item = order.value.items[i]
+          
+          if (!item.name || item.name.trim() === '') {
+            alert(`يرجى إدخال اسم المنتج رقم ${i + 1}`)
+            return
+          }
+          
+          if (!item.quantity || item.quantity <= 0) {
+            alert(`يرجى إدخال كمية صحيحة للمنتج رقم ${i + 1}`)
+            return
+          }
+          
+          if (!item.price || item.price <= 0) {
+            alert(`يرجى إدخال سعر صحيح للمنتج رقم ${i + 1}`)
+            return
+          }
+        }
+        
+        // التحقق من أن الإجمالي أكبر من صفر
+        if (!order.value.total || order.value.total <= 0) {
+          alert('إجمالي الطلب يجب أن يكون أكبر من صفر')
+          return
+        }
+        
+        // إعداد بيانات الطلب للحفظ
+        const orderData = {
+          customer_name: order.value.customer_name.trim(),
+          customer_phone: order.value.customer_phone.trim(),
+          customer_address: order.value.customer_address.trim(),
+          items: order.value.items.map(item => ({
+            name: item.name.trim(),
+            quantity: Number(item.quantity),
+            price: Number(item.price),
+            total: Number(item.total)
+          })),
+          subtotal: Number(order.value.subtotal),
+          tax_rate: 15, // نسبة الضريبة الثابتة
+          tax_amount: Number(order.value.tax),
+          total: Number(order.value.total),
+          notes: order.value.notes ? order.value.notes.trim() : '',
+          status: order.value.status,
+          created_by: JSON.parse(localStorage.getItem('user') || '{}').id
         }
         
         // إنشاء الطلب في قاعدة البيانات
         const { data, error } = await supabase
           .from('orders')
-          .insert([{
-            customer_name: order.value.customer_name,
-            customer_phone: order.value.customer_phone,
-            customer_address: order.value.customer_address,
-            items: order.value.items,
-            subtotal: order.value.subtotal,
-            tax: order.value.tax,
-            total: order.value.total,
-            notes: order.value.notes,
-            status: order.value.status,
-            created_by: JSON.parse(localStorage.getItem('user') || '{}').id
-          }])
+          .insert([orderData])
           .select()
         
         if (error) throw error
@@ -308,7 +373,7 @@ export default {
         router.push('/orders')
       } catch (error) {
         console.error('خطأ في إنشاء الطلب:', error)
-        alert('حدث خطأ أثناء إنشاء الطلب')
+        alert('حدث خطأ أثناء إنشاء الطلب: ' + (error.message || 'خطأ غير معروف'))
       } finally {
         submitting.value = false
       }

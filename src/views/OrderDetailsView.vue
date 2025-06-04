@@ -128,34 +128,80 @@
               </div>
             </div>
             
-            <!-- تفاصيل المنتج -->
+            <!-- تفاصيل المنتجات -->
             <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-              <h2 class="text-lg font-semibold text-gray-800 mb-4">تفاصيل المنتج</h2>
-              <div class="space-y-4">
-                <div>
-                  <span class="text-gray-600">وصف البضاعة:</span>
-                  <p class="mt-1">{{ order.product_description }}</p>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <span class="text-gray-600">الكمية:</span>
-                    <p class="font-medium">{{ order.quantity }}</p>
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">تفاصيل المنتجات</h2>
+              
+              <!-- جدول المنتجات -->
+              <div class="overflow-x-auto">
+                <table class="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr class="bg-gray-100">
+                      <th class="border border-gray-300 px-4 py-2 text-center">وصف المنتج</th>
+                      <th class="border border-gray-300 px-4 py-2 text-center">الكمية</th>
+                      <th class="border border-gray-300 px-4 py-2 text-center">سعر الوحدة</th>
+                      <th class="border border-gray-300 px-4 py-2 text-center">المجموع الفرعي</th>
+                      <th class="border border-gray-300 px-4 py-2 text-center">نسبة الضريبة</th>
+                      <th class="border border-gray-300 px-4 py-2 text-center">قيمة الضريبة</th>
+                      <th class="border border-gray-300 px-4 py-2 text-center">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- عرض المنتجات من قائمة items إذا كانت موجودة -->
+                    <template v-if="order.items && order.items.length > 0">
+                      <tr v-for="(item, index) in order.items" :key="index" class="hover:bg-gray-50">
+                        <td class="border border-gray-300 px-4 py-2">{{ item.name || item.description || 'غير محدد' }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ item.quantity || 0 }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(item.price || 0) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency((item.quantity || 0) * (item.price || 0)) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ (item.tax_rate || order.tax_rate || 15) }}%</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(((item.quantity || 0) * (item.price || 0)) * ((item.tax_rate || order.tax_rate || 15) / 100)) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-semibold">{{ formatCurrency(((item.quantity || 0) * (item.price || 0)) * (1 + ((item.tax_rate || order.tax_rate || 15) / 100))) }}</td>
+                      </tr>
+                    </template>
+                    
+                    <!-- عرض بيانات المنتج الواحد إذا لم تكن هناك قائمة منتجات -->
+                    <template v-else>
+                      <tr class="hover:bg-gray-50">
+                        <td class="border border-gray-300 px-4 py-2">{{ order.product_description || 'وصف المنتج غير متوفر' }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ order.quantity || 1 }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.unit_price || 0) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.subtotal || 0) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ order.tax_rate || 15 }}%</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.tax_amount || 0) }}</td>
+                        <td class="border border-gray-300 px-4 py-2 text-center font-semibold">{{ formatCurrency(order.total || 0) }}</td>
+                      </tr>
+                    </template>
+                  </tbody>
+                  
+                  <!-- صف الإجمالي -->
+                  <tfoot>
+                    <tr class="bg-sky-50 font-semibold">
+                      <td colspan="3" class="border border-gray-300 px-4 py-2 text-center">الإجمالي</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.subtotal || 0) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ order.tax_rate || 15 }}%</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.tax_amount || 0) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center text-sky-700 font-bold">{{ formatCurrency(order.total || 0) }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              
+              <!-- ملاحظات المنتجات -->
+              <div v-if="order.items && order.items.some(item => item.notes)" class="mt-4">
+                <h3 class="text-md font-semibold text-gray-700 mb-2">ملاحظات المنتجات:</h3>
+                <div v-for="(item, index) in order.items" :key="index" class="mb-2">
+                  <div v-if="item.notes" class="p-2 bg-yellow-50 rounded-md border-l-4 border-yellow-400">
+                    <span class="font-medium">{{ item.name || item.description }}:</span>
+                    <span class="text-gray-700">{{ item.notes }}</span>
                   </div>
-                  <div>
-                    <span class="text-gray-600">سعر الوحدة:</span>
-                    <p class="font-medium">{{ formatCurrency(order.unit_price) }}</p>
-                  </div>
-                  <div>
-                    <span class="text-gray-600">نسبة الضريبة:</span>
-                    <p class="font-medium">{{ order.tax_rate }}%</p>
-                  </div>
                 </div>
-                
-                <div v-if="order.notes">
-                  <span class="text-gray-600">ملاحظات:</span>
-                  <p class="mt-1">{{ order.notes }}</p>
-                </div>
+              </div>
+              
+              <!-- ملاحظات الطلب العامة -->
+              <div v-if="order.notes" class="mt-4 p-3 bg-gray-50 rounded-md">
+                <span class="text-gray-600 font-medium">ملاحظات الطلب:</span>
+                <p class="mt-1 text-gray-800">{{ order.notes }}</p>
               </div>
             </div>
             

@@ -5,7 +5,7 @@
       <h1 class="text-2xl font-bold text-sky-700 mb-6 text-center">تقارير المبيعات</h1>
       
       <!-- فلاتر التقارير -->
-      <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="date-from">
             من تاريخ
@@ -46,6 +46,22 @@
             <option value="cancelled">ملغى</option>
           </select>
         </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2 text-center" for="user-filter">
+            المستخدم
+          </label>
+          <select
+            id="user-filter"
+            v-model="filters.userId"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+          >
+            <option value="">جميع المستخدمين</option>
+            <option v-for="user in users" :key="user.id" :value="user.id">
+              {{ user.name }} ({{ user.role === 'admin' ? 'مدير عام' : user.role === 'sales_manager' ? 'مدير مبيعات' : 'مندوب مبيعات' }})
+            </option>
+          </select>
+        </div>
       </div>
       
       <!-- أزرار الإجراءات -->
@@ -64,7 +80,15 @@
           class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           :disabled="!reportData.length"
         >
-          تصدير PDF
+          تصدير PDF (محسن)
+        </button>
+        
+        <button
+          @click="exportElementToPDF"
+          class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          :disabled="!reportData.length"
+        >
+          تصدير PDF (من الصفحة)
         </button>
         
         <button
@@ -73,10 +97,9 @@
         >
           إعادة تعيين
         </button>
-      </div>
-      
+      </div>      
       <!-- ملخص التقرير -->
-      <div v-if="reportData.length > 0" class="mb-8">
+      <div id="report-content" v-if="reportData.length > 0" class="mb-8">
         <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">ملخص التقرير</h2>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="bg-blue-100 p-4 rounded-lg text-center">
@@ -138,7 +161,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { supabase } from '@/services/supabase'
 import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass } from '@/utils/formatters'
 
@@ -147,13 +170,28 @@ export default {
   setup() {
     const loading = ref(false)
     const reportData = ref([])
-    
-    // فلاتر التقرير
+    const users = ref([])
     const filters = ref({
       dateFrom: '',
       dateTo: '',
-      status: ''
+      status: '',
+      userId: ''
     })
+    
+    // جلب قائمة المستخدمين
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, role')
+          .order('name')
+        
+        if (error) throw error
+        users.value = data || []
+      } catch (error) {
+        console.error('خطأ في جلب المستخدمين:', error)
+      }
+    }
     
     // ملخص التقرير
     const reportSummary = computed(() => {
@@ -206,6 +244,11 @@ export default {
           query = query.eq('status', filters.value.status)
         }
         
+        // تطبيق فلتر المستخدم
+        if (filters.value.userId) {
+          query = query.eq('created_by', filters.value.userId)
+        }
+        
         const { data, error } = await query
         
         if (error) throw error
@@ -221,10 +264,63 @@ export default {
     }
     
     // تصدير إلى PDF
-    const exportToPDF = () => {
-      // هنا يمكن إضافة منطق تصدير PDF
-      console.log('تصدير التقرير إلى PDF')
-      alert('سيتم إضافة ميزة تصدير PDF قريباً')
+    const exportToPDF = async () => {
+      try {
+        if (!reportData.value.length) {
+          alert('لا توجد بيانات لتصديرها')
+          return
+        }
+        
+        // استيراد دالة توليد PDF المحسنة
+        const { generateReportPDF } = await import('@/utils/invoiceGenerator')
+        
+        // إعداد بيانات الفلاتر مع أسماء المستخدمين
+        const filtersWithNames = {
+          ...filters.value,
+          userName: filters.value.userId ? 
+            users.value.find(u => u.id === filters.value.userId)?.name : null
+        }
+        
+        // توليد PDF
+        await generateReportPDF(reportData.value, reportSummary.value, filtersWithNames)
+        
+        console.log('تم تصدير التقرير إلى PDF بنجاح')
+      } catch (error) {
+        console.error('خطأ في تصدير PDF:', error)
+        alert('حدث خطأ أثناء تصدير التقرير إلى PDF: ' + error.message)
+      }
+    }
+    
+    // تصدير إلى PDF من العنصر (طريقة بديلة)
+    const exportElementToPDF = async () => {
+      try {
+        if (!reportData.value.length) {
+          alert('لا توجد بيانات لتصديرها')
+          return
+        }
+        
+        // استيراد دالة توليد PDF من العنصر
+        const { createPdfFromElement } = await import('@/utils/invoiceGenerator')
+        
+        // انتظار تحديث DOM
+        await nextTick()
+        
+        // توليد اسم الملف
+        const dateFrom = filters.value.dateFrom || 'all'
+        const dateTo = filters.value.dateTo || 'all'
+        const filename = `sales-report-element-${dateFrom}-to-${dateTo}.pdf`
+        
+        // توليد PDF من العنصر
+        await createPdfFromElement('report-content', {
+          filename: filename,
+          orientation: 'landscape'
+        })
+        
+        console.log('تم تصدير التقرير إلى PDF بنجاح')
+      } catch (error) {
+        console.error('خطأ في تصدير PDF:', error)
+        alert('حدث خطأ أثناء تصدير التقرير إلى PDF: ' + error.message)
+      }
     }
     
     // إعادة تعيين الفلاتر
@@ -232,13 +328,17 @@ export default {
       filters.value = {
         dateFrom: '',
         dateTo: '',
-        status: ''
+        status: '',
+        userId: ''
       }
       reportData.value = []
     }
     
     // تهيئة الصفحة
     onMounted(() => {
+      // جلب قائمة المستخدمين
+      fetchUsers()
+      
       // تعيين التاريخ الافتراضي (آخر 30 يوم)
       const today = new Date()
       const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000))
@@ -250,10 +350,12 @@ export default {
     return {
       loading,
       reportData,
+      users,
       filters,
       reportSummary,
       generateReport,
       exportToPDF,
+      exportElementToPDF,
       resetFilters,
       formatCurrency,
       formatDate,
