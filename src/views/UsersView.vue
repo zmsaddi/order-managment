@@ -466,7 +466,8 @@ export default {
             defaultStatus = 'pending'
           }
           
-          const { data, error } = await supabase.auth.signUp({
+          // 1) إنشاء حساب في Supabase Auth
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: userForm.value.email,
             password: userForm.value.password,
             options: {
@@ -478,9 +479,28 @@ export default {
             }
           })
           
-          if (error) throw error
+          if (signUpError) throw signUpError
           
-          // إعادة جلب المستخدمين
+          // 2) الحصول على معرف المستخدم الجديد من Auth
+          const newAuthId = signUpData.user.id
+          
+          // 3) إدخال صف جديد في جدول "users"، مع استخدام newAuthId كقيمة العمود id
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert([
+              {
+                id: newAuthId,
+                name: userForm.value.name,
+                email: userForm.value.email,
+                role: userForm.value.role,
+                status: defaultStatus,
+                created_at: new Date().toISOString()
+              }
+            ])
+          
+          if (insertError) throw insertError
+          
+          // 4) إعادة جلب المستخدمين لتحديث الواجهة
           await fetchUsers()
         }
         
