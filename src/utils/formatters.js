@@ -36,20 +36,28 @@ export const parseEnglishNumber = (value) => {
 };
 
 /**
- * تنسيق المبلغ كعملة يورو
+ * تنسيق المبلغ كعملة يورو مع ضمان استخدام الأرقام الإنجليزية
  * @param {number} amount - المبلغ المراد تنسيقه
- * @returns {string} - المبلغ منسقاً كعملة يورو
+ * @returns {string} - المبلغ منسقاً كعملة يورو بالأرقام الإنجليزية
  */
 export const formatCurrency = (amount) => {
-  if (amount === null || amount === undefined) return '0.00 €';
+  if (amount === null || amount === undefined) return '€0.00';
   
-  return new Intl.NumberFormat('ar-EG', {
+  // تحويل إلى رقم وضمان دقة المنزلتين العشريتين
+  const numericAmount = parseFloat(amount) || 0;
+  const roundedAmount = Math.round(numericAmount * 100) / 100;
+  
+  // تنسيق المبلغ باستخدام locale إنجليزي لضمان الأرقام الإنجليزية
+  const formatted = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'EUR',
     currencyDisplay: 'symbol',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(amount).replace(/EUR/g, '€');
+  }).format(roundedAmount);
+  
+  // استبدال رمز EUR بـ € وضمان الأرقام الإنجليزية
+  return convertToEnglishNumbers(formatted.replace(/EUR/g, '€'));
 };
 
 /**

@@ -152,10 +152,10 @@
                       <td class="border border-gray-300 px-4 py-2">
                         <div class="font-medium">{{ order.product_description || 'وصف المنتج غير متوفر' }}</div>
                       </td>
-                      <td class="border border-gray-300 px-4 py-2 text-center font-medium">{{ order.quantity || 1 }}</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center font-medium text-blue-600">{{ formatCurrency(order.unit_price || 0) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center font-medium">{{ convertToEnglishNumbers((order.quantity || 1).toString()) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center font-medium text-blue-600">{{ formatCurrency(calculateUnitPrice(order)) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.subtotal || 0) }}</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center">{{ order.tax_rate || 15 }}%</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.tax_amount || 0) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-green-600">{{ formatCurrency(order.total || 0) }}</td>
                     </tr>
@@ -166,7 +166,7 @@
                     <tr class="bg-sky-50 font-semibold">
                       <td colspan="3" class="border border-gray-300 px-4 py-2 text-center">الإجمالي</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.subtotal || 0) }}</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center">{{ order.tax_rate || 15 }}%</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.tax_amount || 0) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center text-sky-700 font-bold">{{ formatCurrency(order.total || 0) }}</td>
                     </tr>
@@ -201,7 +201,7 @@
                   <span class="font-medium">{{ formatCurrency(order.subtotal) }}</span>
                 </div>
                 <div class="flex justify-between py-2">
-                  <span class="text-gray-600">قيمة الضريبة ({{ order.tax_rate }}%):</span>
+                  <span class="text-gray-600">قيمة الضريبة ({{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%):</span>
                   <span class="font-medium">{{ formatCurrency(order.tax_amount) }}</span>
                 </div>
                 <div class="flex justify-between py-2 border-t border-gray-200 mt-2">
@@ -267,6 +267,19 @@ export default {
       // المندوب يمكنه تغيير حالة طلباته فقط
       return user.value.id === order.value.sales_rep_id
     })
+    
+    // حساب سعر الوحدة من المجموع الفرعي والكمية
+    const calculateUnitPrice = (orderData) => {
+      if (!orderData || !orderData.subtotal || !orderData.quantity) return 0
+      
+      const subtotal = parseEnglishNumber(orderData.subtotal) || 0
+      const quantity = parseEnglishNumber(orderData.quantity) || 1
+      
+      // حساب سعر الوحدة وتقريبه إلى منزلتين عشريتين
+      const unitPrice = Math.round((subtotal / quantity) * 100) / 100
+      
+      return unitPrice
+    }
     
     // الحصول على نص حالة الطلب
     const getStatusText = (status) => {
@@ -447,6 +460,7 @@ export default {
       canEditOrder,
       canDeleteOrder,
       canChangeStatus,
+      calculateUnitPrice,
       getStatusText,
       getStatusClass,
       updateOrderStatus,

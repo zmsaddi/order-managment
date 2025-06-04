@@ -171,8 +171,9 @@
                   min="0"
                   max="100"
                   step="0.1"
-                  @input="calculateOrderTotal"
-                  @blur="order.taxRate = parseEnglishNumber(order.taxRate); calculateOrderTotal()"
+                  @input="handleTaxRateChange"
+                  @blur="handleTaxRateBlur"
+                  @keyup="handleTaxRateChange"
                 />
               </div>
               
@@ -202,14 +203,23 @@
           
           <!-- ملاحظات -->
           <div class="col-span-1 md:col-span-2">
-            <label for="notes" class="form-label">ملاحظات</label>
-            <textarea 
-              id="notes" 
-              v-model="order.notes" 
-              class="form-input"
-              rows="3"
-              placeholder="ملاحظات إضافية..."
-            ></textarea>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">ملاحظات</h2>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <label for="notes" class="form-label text-lg font-medium text-yellow-800">ملاحظات إضافية</label>
+              <textarea 
+                id="notes" 
+                v-model="order.notes" 
+                class="form-input mt-2 bg-white border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500"
+                rows="4"
+                placeholder="أضف أي ملاحظات مهمة حول الطلب..."
+              ></textarea>
+              <p class="text-sm text-yellow-700 mt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline ml-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+                هذه الملاحظات ستظهر في تفاصيل الطلب والفاتورة
+              </p>
+            </div>
           </div>
         </div>
         
@@ -308,6 +318,34 @@ export default {
       order.value.subtotal = roundedSubtotal
       order.value.tax = tax
       order.value.total = total
+    }
+    
+    // معالجة تغيير نسبة الضريبة
+    const handleTaxRateChange = () => {
+      // تحويل الأرقام العربية إلى إنجليزية فوراً
+      if (order.value.taxRate) {
+        const englishValue = convertToEnglishNumbers(order.value.taxRate.toString())
+        const parsedValue = parseFloat(englishValue)
+        if (!isNaN(parsedValue)) {
+          order.value.taxRate = parsedValue
+        }
+      }
+      // إعادة حساب الإجمالي فوراً
+      calculateOrderTotal()
+    }
+    
+    // معالجة فقدان التركيز من حقل نسبة الضريبة
+    const handleTaxRateBlur = () => {
+      // ضمان أن القيمة رقمية وفي النطاق المسموح
+      const taxRate = parseEnglishNumber(order.value.taxRate)
+      if (taxRate < 0) {
+        order.value.taxRate = 0
+      } else if (taxRate > 100) {
+        order.value.taxRate = 100
+      } else {
+        order.value.taxRate = Math.round(taxRate * 10) / 10 // تقريب إلى منزلة عشرية واحدة
+      }
+      calculateOrderTotal()
     }
     
     // إضافة منتج جديد
@@ -429,6 +467,9 @@ export default {
       order,
       submitting,
       calculateItemTotal,
+      calculateOrderTotal,
+      handleTaxRateChange,
+      handleTaxRateBlur,
       addItem,
       removeItem,
       submitOrder,
