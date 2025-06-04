@@ -164,20 +164,21 @@
                       <td class="border border-gray-300 px-4 py-2 text-center font-medium">{{ convertToEnglishNumbers((product.quantity || 1).toString()) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center font-medium text-blue-600">{{ formatCurrency(product.unit_price || 0) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(product.subtotal || 0) }}</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency((product.subtotal || 0) * (order.tax_rate || 15) / 100) }}</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-green-600">{{ formatCurrency((product.subtotal || 0) * (1 + (order.tax_rate || 15) / 100)) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 0).toString()) }}%</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency((product.subtotal || 0) * (order.tax_rate || 0) / 100) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-green-600">{{ formatCurrency((product.subtotal || 0) * (1 + (order.tax_rate || 0) / 100)) }}</td>
                     </tr>
                     
                     <!-- عرض بيانات المنتج من الحقول الأساسية (للطلبات القديمة) -->
                     <tr v-else class="hover:bg-gray-50">
                       <td class="border border-gray-300 px-4 py-2">
-                        <div class="font-medium">{{ order.product_description || 'وصف المنتج غير متوفر' }}</div>
+                        <div class="font-medium">{{ order.product_description || order.description || 'وصف المنتج غير متوفر' }}</div>
+                        <div v-if="order.notes" class="text-sm text-yellow-600 mt-1 italic">{{ order.notes }}</div>
                       </td>
                       <td class="border border-gray-300 px-4 py-2 text-center font-medium">{{ convertToEnglishNumbers((order.quantity || 1).toString()) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center font-medium text-blue-600">{{ formatCurrency(calculateUnitPrice(order)) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.subtotal || 0) }}</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 0).toString()) }}%</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.tax_amount || 0) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-green-600">{{ formatCurrency(order.total || 0) }}</td>
                     </tr>
@@ -188,7 +189,7 @@
                     <tr class="bg-sky-50 font-semibold">
                       <td colspan="3" class="border border-gray-300 px-4 py-2 text-center">الإجمالي</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.subtotal || 0) }}</td>
-                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 0).toString()) }}%</td>
                       <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(order.tax_amount || 0) }}</td>
                       <td class="border border-gray-300 px-4 py-2 text-center text-sky-700 font-bold">{{ formatCurrency(order.total || 0) }}</td>
                     </tr>
@@ -223,7 +224,7 @@
                   <span class="font-medium">{{ formatCurrency(order.subtotal) }}</span>
                 </div>
                 <div class="flex justify-between py-2">
-                  <span class="text-gray-600">قيمة الضريبة ({{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%):</span>
+                  <span class="text-gray-600">قيمة الضريبة ({{ convertToEnglishNumbers((order.tax_rate || 0).toString()) }}%):</span>
                   <span class="font-medium">{{ formatCurrency(order.tax_amount) }}</span>
                 </div>
                 <div class="flex justify-between py-2 border-t border-gray-200 mt-2">

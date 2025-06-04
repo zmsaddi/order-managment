@@ -260,6 +260,9 @@ export default {
     const router = useRouter()
     const submitting = ref(false)
 
+    // regex للتحقق من صحة رقم الهاتف
+    const phoneRegex = /^\+?[0-9 \(\)\-]{8,20}$/
+
     // بيانات الطلب
     const order = ref({
       customer_name: '',
@@ -369,8 +372,22 @@ export default {
       try {
         submitting.value = true
 
+        // التحقق من صحة رقم الهاتف
+        if (order.value.customer_phone && !phoneRegex.test(order.value.customer_phone.trim())) {
+          alert('رقم الهاتف غير صحيح. يجب أن يحتوي على 8-20 رقم ويمكن أن يبدأ بـ + ويحتوي على مسافات وأقواس وشرطات')
+          submitting.value = false
+          return
+        }
+
         // تأكد أن كل منتج محسوب بشكل صحيح
         order.value.items.forEach((_, idx) => calculateItemTotal(idx))
+
+        // التحقق من صحة رقم الهاتف
+        if (!phoneRegex.test(order.value.customer_phone.trim())) {
+          alert('رقم الهاتف غير صحيح. يجب أن يحتوي على 8-20 رقم ويمكن أن يبدأ بـ + ويحتوي على مسافات وأقواس وشرطات')
+          submitting.value = false
+          return
+        }
 
         // التحقق من أن الإجمالي أكبر من صفر
         if (!order.value.total || order.value.total <= 0) {

@@ -176,7 +176,7 @@ export const fetchOrderWithProducts = async (orderId) => {
     // جلب منتجات الطلب من الجدول المنفصل
     const { data: productsData, error: productsError } = await supabase
       .from('order_products')
-      .select('*')
+      .select('id, order_id, name, description, notes, quantity, unit_price, subtotal')
       .eq('order_id', orderId)
     
     // إضافة المنتجات إلى بيانات الطلب

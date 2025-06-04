@@ -490,9 +490,9 @@ export default {
         }
         
         // التحقق من صحة رقم الهاتف
-        const phoneRegex = /^[0-9+\-\s()]{8,15}$/
+        const phoneRegex = /^\+?[0-9 \(\)\-]{8,20}$/
         if (!phoneRegex.test(order.value.customer_phone.trim())) {
-          alert('يرجى إدخال رقم هاتف صحيح (8-15 رقم)')
+          alert('رقم الهاتف غير صحيح. يجب أن يحتوي على 8-20 رقم ويمكن أن يبدأ بـ + ويحتوي على مسافات وأقواس وشرطات')
           return
         }
         
