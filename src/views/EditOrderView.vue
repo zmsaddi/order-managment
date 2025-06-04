@@ -1,39 +1,4 @@
-<template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- القائمة الجانبية والشريط العلوي -->
-    <div class="flex h-screen overflow-hidden">
-      <!-- القائمة الجانبية -->
-      <SidebarMenu 
-        :user="user" 
-        :mobile-open="mobileOpen"
-        @close="mobileOpen = false"
-      />
-      
-      <!-- المحتوى الرئيسي -->
-      <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- الشريط العلوي -->
-        <header class="bg-white shadow-sm z-10">
-          <div class="flex items-center justify-between p-4">
-            <div class="flex items-center">
-              <button @click="toggleSidebar" class="md:hidden ml-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <h2 class="text-xl font-semibold text-gray-800">تعديل الطلب</h2>
-            </div>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
-              <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
-                {{ user.name.charAt(0) }}
-              </div>
-            </div>
-          </div>
-        </header>
-        
-        
-        <!-- محتوى الصفحة -->
-        <main class="flex-1 overflow-y-auto p-4">
+<template><div>
           <div v-if="loading" class="text-center py-8">
             <p>جاري تحميل البيانات...</p>
           </div>
@@ -325,28 +290,20 @@
               </form>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
-  </div>
-</template>
-
+</div></template>
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import SidebarMenu from '@/components/SidebarMenu.vue'
 import { formatCurrency } from '@/utils/formatters'
 
 export default {
   name: 'EditOrderView',
   components: {
-    SidebarMenu
   },
   setup() {
     const router = useRouter()
     const route = useRoute()
-    const mobileOpen = ref(false)
     const loading = ref(true)
     const updating = ref(false)
     
@@ -372,8 +329,6 @@ export default {
     const products = ref([])
     
     // تبديل حالة القائمة الجانبية للجوال
-    const toggleSidebar = () => {
-      mobileOpen.value = !mobileOpen.value
     }
     
     // حساب المجموع الفرعي للمنتج
@@ -556,8 +511,6 @@ export default {
     
     return {
       user,
-      mobileOpen,
-      toggleSidebar,
       loading,
       updating,
       order,
@@ -572,7 +525,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 .form-label {
   @apply block text-sm font-medium text-gray-700 mb-1;
