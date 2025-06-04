@@ -1,5 +1,5 @@
-// تكوين متغيرات البيئة لـ Supabase
 export const config = {
-  supabaseUrl: 'https://mrocuyajltnvhiiigwqb.supabase.co',
-  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yb2N1eWFqbHRudmhpaWlnd3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5ODk4NTQsImV4cCI6MjA2NDU2NTg1NH0.zzFEJKO6rHm5GypGR4QSFBFMwCBibdgOlkzL5V08Rf4'
+  supabaseUrl: 'https://ixvkzrxvbgwgdxpjwkxf.supabase.co',
+  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4dmt6cnh2Ymd3Z2R4cGp3a3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTc0NTM2NzAsImV4cCI6MjAzMzAyOTY3MH0.Wy0QE9vGZ1RjpQDQzNpC_XMtEsZVgxUCxs66SOvLSEY',
+  supabaseServiceKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4dmt6cnh2Ymd3Z2R4cGp3a3hmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNzQ1MzY3MCwiZXhwIjoyMDMzMDI5NjcwfQ.Wy0QE9vGZ1RjpQDQzNpC_XMtEsZVgxUCxs66SOvLSEY'
 }

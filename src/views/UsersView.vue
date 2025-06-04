@@ -337,7 +337,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '@/services/supabase'
-import { backupUserData, restoreUserData, verifyUserPermissions, updateUserData } from '@/utils/sessionManager'
+import { adminService } from '@/services/admin.service'
 
 export default {
   name: 'UsersView',
@@ -378,26 +378,9 @@ export default {
         loading.value = true
         error.value = null
         
-        // حفظ نسخة من بيانات المستخدم الحالي
-        const originalUserData = backupUserData()
-        
-        const { data, error: fetchError } = await supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false })
-        
-        if (fetchError) throw fetchError
-        
+        // استخدام خدمة الإدارة لجلب المستخدمين
+        const data = await adminService.getUsers()
         users.value = data
-        
-        // استعادة بيانات المستخدم الحالي
-        restoreUserData()
-        currentUser.value = JSON.parse(localStorage.getItem('user') || '{}')
-        
-        // التحقق من صلاحيات المستخدم
-        if (!verifyUserPermissions()) {
-          console.warn('ليس لديك صلاحية لعرض المستخدمين')
-        }
       } catch (err) {
         console.error('خطأ في جلب المستخدمين:', err)
         error.value = err.message
@@ -412,46 +395,13 @@ export default {
         loading.value = true
         error.value = null
         
-        // حفظ نسخة من بيانات المستخدم الحالي
-        const originalUserData = backupUserData()
-        
         // التحقق من صلاحيات المستخدم الحالي
-        if (!verifyUserPermissions()) {
+        if (!['admin', 'sales_manager'].includes(currentUser.value.role)) {
           throw new Error('ليس لديك صلاحية لإضافة مستخدمين جدد')
         }
         
-        // إنشاء المستخدم في نظام المصادقة
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: newUser.value.email,
-          password: newUser.value.password,
-          options: {
-            data: {
-              name: newUser.value.name,
-              role: newUser.value.role
-            }
-          }
-        })
-        
-        if (authError) throw authError
-        
-        // إنشاء سجل المستخدم في جدول المستخدمين
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .insert([
-            {
-              id: authData.user.id,
-              email: newUser.value.email,
-              name: newUser.value.name,
-              role: newUser.value.role,
-              phone: newUser.value.phone,
-              address: newUser.value.address,
-              status: newUser.value.status
-            }
-          ])
-          .select()
-          .single()
-        
-        if (userError) throw userError
+        // استخدام خدمة الإدارة لإنشاء المستخدم
+        await adminService.createUser(newUser.value)
         
         // إعادة تعيين نموذج المستخدم الجديد
         newUser.value = {
@@ -467,39 +417,12 @@ export default {
         // إغلاق النافذة المنبثقة
         showAddUserModal.value = false
         
-        // استعادة بيانات المستخدم الحالي
-        restoreUserData()
-        currentUser.value = JSON.parse(localStorage.getItem('user') || '{}')
-        
         // إعادة جلب قائمة المستخدمين
         await fetchUsers()
-        
-        // التحقق من صلاحيات المستخدم بعد العملية
-        if (!verifyUserPermissions()) {
-          console.warn('تم فقدان الصلاحيات بعد إضافة المستخدم')
-          // محاولة استعادة الصلاحيات
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session) {
-            const { data: currentUserData } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single()
-            
-            if (currentUserData) {
-              updateUserData(currentUserData)
-              currentUser.value = currentUserData
-            }
-          }
-        }
       } catch (err) {
         console.error('خطأ في إضافة المستخدم:', err)
         error.value = err.message
         alert(`خطأ في إضافة المستخدم: ${err.message}`)
-        
-        // استعادة بيانات المستخدم الحالي في حالة الخطأ
-        restoreUserData()
-        currentUser.value = JSON.parse(localStorage.getItem('user') || '{}')
       } finally {
         loading.value = false
       }
@@ -511,58 +434,30 @@ export default {
         loading.value = true
         error.value = null
         
-        // حفظ نسخة من بيانات المستخدم الحالي
-        const originalUserData = backupUserData()
-        
         // التحقق من صلاحيات المستخدم الحالي
-        if (!verifyUserPermissions(['admin', 'sales_manager']) && originalUserData.id !== editingUser.value.id) {
+        if (!['admin', 'sales_manager'].includes(currentUser.value.role) && currentUser.value.id !== editingUser.value.id) {
           throw new Error('ليس لديك صلاحية لتعديل بيانات هذا المستخدم')
         }
         
-        // تحديث بيانات المستخدم في جدول المستخدمين
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .update({
-            name: editingUser.value.name,
-            role: editingUser.value.role,
-            phone: editingUser.value.phone,
-            address: editingUser.value.address,
-            status: editingUser.value.status,
-            updated_at: new Date()
-          })
-          .eq('id', editingUser.value.id)
-          .select()
-          .single()
-        
-        if (userError) throw userError
-        
-        // إذا تم تحديث كلمة المرور
-        if (editingUser.value.password) {
-          // التحقق من طول كلمة المرور
-          if (editingUser.value.password.length < 6) {
-            throw new Error('يجب أن تكون كلمة المرور 6 أحرف على الأقل')
-          }
-          
-          // تحديث كلمة المرور
-          const { error: passwordError } = await supabase.auth.admin.updateUserById(
-            editingUser.value.id,
-            { password: editingUser.value.password }
-          )
-          
-          if (passwordError) throw passwordError
-        }
+        // استخدام خدمة الإدارة لتحديث المستخدم
+        await adminService.updateUser(editingUser.value.id, editingUser.value)
         
         // إغلاق النافذة المنبثقة
         showEditUserModal.value = false
         
         // إذا كان المستخدم يقوم بتحديث بياناته الشخصية، قم بتحديث localStorage
-        if (originalUserData.id === editingUser.value.id) {
-          updateUserData(userData)
-          currentUser.value = userData
-        } else {
-          // استعادة بيانات المستخدم الحالي
-          restoreUserData()
-          currentUser.value = JSON.parse(localStorage.getItem('user') || '{}')
+        if (currentUser.value.id === editingUser.value.id) {
+          // جلب بيانات المستخدم المحدثة
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', currentUser.value.id)
+            .single()
+          
+          if (userData) {
+            localStorage.setItem('user', JSON.stringify(userData))
+            currentUser.value = userData
+          }
         }
         
         // إعادة جلب قائمة المستخدمين
@@ -571,10 +466,6 @@ export default {
         console.error('خطأ في تحديث المستخدم:', err)
         error.value = err.message
         alert(`خطأ في تحديث المستخدم: ${err.message}`)
-        
-        // استعادة بيانات المستخدم الحالي في حالة الخطأ
-        restoreUserData()
-        currentUser.value = JSON.parse(localStorage.getItem('user') || '{}')
       } finally {
         loading.value = false
       }
@@ -586,11 +477,8 @@ export default {
         loading.value = true
         error.value = null
         
-        // حفظ نسخة من بيانات المستخدم الحالي
-        const originalUserData = backupUserData()
-        
         // التحقق من صلاحيات المستخدم الحالي
-        if (!verifyUserPermissions()) {
+        if (!['admin', 'sales_manager'].includes(currentUser.value.role)) {
           throw new Error('ليس لديك صلاحية لحذف المستخدمين')
         }
         
@@ -600,24 +488,15 @@ export default {
         }
         
         // التحقق من أن مدير المبيعات لا يحاول حذف مدير مبيعات آخر
-        if (originalUserData.role === 'sales_manager' && userToDelete.value.role === 'sales_manager') {
+        if (currentUser.value.role === 'sales_manager' && userToDelete.value.role === 'sales_manager') {
           throw new Error('لا يمكن لمدير المبيعات حذف مدير مبيعات آخر')
         }
         
-        // حذف سجل المستخدم من جدول المستخدمين
-        const { error: deleteError } = await supabase
-          .from('users')
-          .delete()
-          .eq('id', userToDelete.value.id)
-        
-        if (deleteError) throw deleteError
+        // استخدام خدمة الإدارة لحذف المستخدم
+        await adminService.deleteUser(userToDelete.value.id)
         
         // إغلاق النافذة المنبثقة
         showDeleteConfirmModal.value = false
-        
-        // استعادة بيانات المستخدم الحالي
-        restoreUserData()
-        currentUser.value = JSON.parse(localStorage.getItem('user') || '{}')
         
         // إعادة جلب قائمة المستخدمين
         await fetchUsers()
@@ -625,10 +504,6 @@ export default {
         console.error('خطأ في حذف المستخدم:', err)
         error.value = err.message
         alert(`خطأ في حذف المستخدم: ${err.message}`)
-        
-        // استعادة بيانات المستخدم الحالي في حالة الخطأ
-        restoreUserData()
-        currentUser.value = JSON.parse(localStorage.getItem('user') || '{}')
       } finally {
         loading.value = false
       }
