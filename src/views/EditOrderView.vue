@@ -1,499 +1,621 @@
 <template>
   <div>
-    <!-- عنوان الصفحة -->
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">تعديل الطلب</h1>
-      <router-link to="/orders" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fill-rule="evenodd"
-            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        العودة إلى قائمة الطلبات
-      </router-link>
-    </div>
-
-    <!-- عرض دائرة التحميل -->
+    <!-- حالة التحميل -->
     <div v-if="loading" class="text-center py-8">
-      <p>جاري تحميل بيانات الطلب…</p>
+      <p>جاري تحميل البيانات...</p>
     </div>
-
-    <!-- محتوى النموذج -->
-    <div v-else class="bg-white rounded-lg shadow-sm p-6">
-      <form @submit.prevent="updateOrder">
-        <!-- بيانات العميل -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div>
-            <label for="customer-name" class="form-label">اسم العميل <span class="text-red-500">*</span></label>
-            <input
-              type="text"
-              id="customer-name"
-              v-model="order.customer_name"
-              class="form-input"
-              required
-            />
-          </div>
-          <div>
-            <label for="customer-phone" class="form-label">رقم هاتف العميل <span class="text-red-500">*</span></label>
-            <input
-              type="text"
-              id="customer-phone"
-              v-model="order.customer_phone"
-              placeholder="+34 600 123 456"
-              pattern="^\+?[0-9 \(\)\-]{8,20}$"
-              class="form-input"
-              required
-            />
-          </div>
-          <div>
-            <label for="customer-address" class="form-label">عنوان العميل <span class="text-red-500">*</span></label>
-            <input
-              type="text"
-              id="customer-address"
-              v-model="order.customer_address"
-              class="form-input"
-              required
-            />
-          </div>
-        </div>
-
-        <!-- تفاصيل المنتجات -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold text-gray-800 mb-4">تفاصيل المنتج</h2>
-          <div class="overflow-x-auto">
-            <!-- رأس الجدول -->
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2 font-medium text-gray-700">
-              <div class="md:col-span-2 text-center">اسم المنتج</div>
-              <div class="text-center">الكمية</div>
-              <div class="text-center">السعر لكل وحدة (€)</div>
-              <div class="text-center">الوصف</div>
-              <div class="text-center">إجراء</div>
+    
+    <!-- حالة عدم وجود الطلب -->
+    <div v-else-if="!order.id" class="text-center py-8">
+      <p>لم يتم العثور على الطلب</p>
+      <router-link to="/orders" class="btn btn-primary mt-4">العودة إلى الطلبات</router-link>
+    </div>
+    
+    <!-- نموذج تعديل الطلب -->
+    <div v-else>
+      <!-- عنوان الصفحة -->
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">تعديل الطلب رقم #{{ order.id }}</h1>
+        <router-link :to="`/orders/${order.id}`" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+          </svg>
+          العودة إلى تفاصيل الطلب
+        </router-link>
+      </div>
+      
+      <!-- نموذج تعديل الطلب -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <form @submit.prevent="updateOrder">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- بيانات العميل -->
+            <div class="col-span-1 md:col-span-2">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">بيانات العميل</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label for="customer-name" class="form-label">اسم العميل <span class="text-red-500">*</span></label>
+                  <input 
+                    type="text" 
+                    id="customer-name" 
+                    v-model="order.customer_name" 
+                    class="form-input"
+                    required
+                    placeholder="أدخل اسم العميل الكامل"
+                    maxlength="100"
+                  />
+                </div>
+                
+                <div>
+                  <label for="customer-phone" class="form-label">رقم الهاتف <span class="text-red-500">*</span></label>
+                  <input 
+                    type="tel" 
+                    id="customer-phone" 
+                    v-model="order.customer_phone" 
+                    class="form-input"
+                    required
+                    placeholder="مثال: +966501234567 أو 0501234567"
+                    pattern="[\+]?[0-9\-\s()]{8,20}"
+                    title="يرجى إدخال رقم هاتف صحيح (يمكن أن يبدأ بـ + للأرقام الدولية)"
+                  />
+                </div>
+                
+                <div>
+                  <label for="customer-address" class="form-label">العنوان <span class="text-red-500">*</span></label>
+                  <input 
+                    type="text" 
+                    id="customer-address" 
+                    v-model="order.customer_address" 
+                    class="form-input"
+                    required
+                    placeholder="أدخل العنوان الكامل"
+                    maxlength="200"
+                  />
+                </div>
+              </div>
             </div>
-
-            <!-- صفوف إدخال المنتجات -->
-            <div
-              v-for="(item, index) in order.items"
-              :key="index"
-              class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 items-center"
-            >
-              <!-- اسم المنتج -->
-              <input
-                type="text"
-                v-model="item.name"
-                placeholder="مثال: قلم"
-                class="form-input md:col-span-2"
-                required
-              />
-
-              <!-- الكمية -->
-              <input
-                type="number"
-                v-model.number="item.quantity"
-                @blur="onItemBlur(index)"
-                placeholder="1"
-                class="form-input text-center"
-                min="1"
-                required
-              />
-
-              <!-- السعر لكل وحدة -->
-              <input
-                type="number"
-                v-model.number="item.price"
-                @blur="onItemBlur(index)"
-                placeholder="0.00"
-                class="form-input text-center"
-                min="0"
-                step="0.01"
-                required
-              />
-
-              <!-- الوصف -->
-              <input
-                type="text"
-                v-model="item.description"
-                placeholder="وصف اختياري"
-                class="form-input"
-              />
-
-              <!-- زر إزالة الصف -->
-              <button
-                type="button"
-                @click="removeItem(index)"
-                class="text-red-600 hover:text-red-800"
+            
+            <!-- المنتجات -->
+            <div class="col-span-1 md:col-span-2">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">المنتجات</h2>
+              
+              <div v-for="(item, index) in order.items" :key="index" class="border border-gray-200 rounded-lg p-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                  <div>
+                    <label :for="`item-name-${index}`" class="form-label">اسم المنتج <span class="text-red-500">*</span></label>
+                    <input 
+                      type="text" 
+                      :id="`item-name-${index}`" 
+                      v-model="item.name" 
+                      class="form-input"
+                      required
+                      placeholder="أدخل اسم المنتج"
+                      maxlength="100"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label :for="`item-quantity-${index}`" class="form-label">الكمية <span class="text-red-500">*</span></label>
+                    <input 
+                      type="number" 
+                      :id="`item-quantity-${index}`" 
+                      v-model.number="item.quantity" 
+                      class="form-input text-center text-lg md:text-sm"
+                      min="1"
+                      max="9999"
+                      step="1"
+                      required
+                      placeholder="1"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
+                      @input="calculateItemTotal(index)"
+                      @blur="item.quantity = Math.round(parseEnglishNumber(item.quantity)) || 1; calculateItemTotal(index)"
+                      @focus="$event.target.select()"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label :for="`item-price-${index}`" class="form-label">السعر (يورو) <span class="text-red-500">*</span></label>
+                    <input 
+                      type="number" 
+                      :id="`item-price-${index}`" 
+                      v-model.number="item.price" 
+                      class="form-input"
+                      min="0.01"
+                      max="999999"
+                      step="0.01"
+                      required
+                      placeholder="0.00"
+                      @input="calculateItemTotal(index)"
+                      @blur="item.price = parseEnglishNumber(item.price); calculateItemTotal(index)"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label class="form-label">الإجمالي</label>
+                    <input 
+                      type="text" 
+                      :value="formatCurrency(item.total || 0)" 
+                      class="form-input bg-gray-100"
+                      readonly
+                    />
+                  </div>
+                  
+                  <div>
+                    <button 
+                      type="button" 
+                      @click="removeItem(index)" 
+                      class="btn btn-danger w-full"
+                      :disabled="order.items.length === 1"
+                    >
+                      حذف
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                type="button" 
+                @click="addItem" 
+                class="btn bg-green-500 text-white hover:bg-green-600 mb-4"
               >
-                إزالة
+                إضافة منتج
               </button>
             </div>
-
-            <!-- زر إضافة صف جديد -->
-            <button
-              type="button"
-              @click="addItem"
-              class="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700"
+            
+            <!-- ملخص الطلب -->
+            <div class="col-span-1 md:col-span-2">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">ملخص الطلب</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label for="subtotal" class="form-label">المجموع الفرعي</label>
+                  <input 
+                    type="text" 
+                    id="subtotal" 
+                    :value="formatCurrency(order.subtotal || 0)" 
+                    class="form-input bg-gray-100"
+                    readonly
+                  />
+                </div>
+                
+                <div>
+                  <label for="tax-rate" class="form-label">نسبة الضريبة (%)</label>
+                  <input 
+                    type="number" 
+                    id="tax-rate" 
+                    v-model.number="order.taxRate" 
+                    class="form-input"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    @input="handleTaxRateChange"
+                    @blur="handleTaxRateBlur"
+                    @keyup="handleTaxRateChange"
+                  />
+                </div>
+                
+                <div>
+                  <label for="tax" class="form-label">قيمة الضريبة</label>
+                  <input 
+                    type="text" 
+                    id="tax" 
+                    :value="formatCurrency(order.tax || 0)" 
+                    class="form-input bg-gray-100"
+                    readonly
+                  />
+                </div>
+                
+                <div>
+                  <label for="total" class="form-label">الإجمالي النهائي</label>
+                  <input 
+                    type="text" 
+                    id="total" 
+                    :value="formatCurrency(order.total || 0)" 
+                    class="form-input bg-gray-100 font-bold"
+                    readonly
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <!-- ملاحظات -->
+            <div class="col-span-1 md:col-span-2">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">ملاحظات</h2>
+              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <label for="notes" class="form-label text-lg font-medium text-yellow-800">ملاحظات إضافية</label>
+                <textarea 
+                  id="notes" 
+                  v-model="order.notes" 
+                  class="form-input mt-2 bg-white border-yellow-300 focus:border-yellow-500 focus:ring-yellow-500"
+                  rows="4"
+                  placeholder="أضف أي ملاحظات مهمة حول الطلب..."
+                ></textarea>
+                <p class="text-sm text-yellow-700 mt-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline ml-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                  </svg>
+                  هذه الملاحظات ستظهر في تفاصيل الطلب والفاتورة
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- أزرار الإجراءات -->
+          <div class="flex justify-end space-x-4 space-x-reverse mt-6">
+            <router-link :to="`/orders/${order.id}`" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300">
+              إلغاء
+            </router-link>
+            <button 
+              type="submit" 
+              class="btn btn-primary"
+              :disabled="submitting"
             >
-              إضافة عنصر جديد
+              <span v-if="submitting">جاري الحفظ...</span>
+              <span v-else">حفظ التعديلات</span>
             </button>
           </div>
-        </div>
-
-        <!-- ملخص الأسعار -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label for="subtotal" class="form-label">المجموع الفرعي (الطلب)</label>
-            <input
-              type="text"
-              id="subtotal"
-              :value="formatCurrency(order.subtotal || 0)"
-              class="form-input bg-gray-100 font-bold"
-              readonly
-            />
-          </div>
-          <div>
-            <label for="taxRate" class="form-label">نسبة الضريبة (%)</label>
-            <input
-              type="number"
-              v-model.number="order.tax_rate"
-              @blur="onTaxBlur"
-              placeholder="مثال: 10"
-              class="form-input text-center"
-              min="0"
-              max="100"
-              step="0.1"
-            />
-          </div>
-          <div>
-            <label for="taxAmount" class="form-label">مبلغ الضريبة</label>
-            <input
-              type="text"
-              id="taxAmount"
-              :value="formatCurrency(order.tax_amount || 0)"
-              class="form-input bg-gray-100"
-              readonly
-            />
-          </div>
-          <div>
-            <label for="total" class="form-label">الإجمالي النهائي</label>
-            <input
-              type="text"
-              id="total"
-              :value="formatCurrency(order.total || 0)"
-              class="form-input bg-gray-100 font-bold"
-              readonly
-            />
-          </div>
-        </div>
-
-        <!-- ملاحظات -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold text-gray-800 mb-4">ملاحظات</h2>
-          <textarea
-            v-model="order.notes"
-            class="form-input w-full border rounded p-2"
-            rows="4"
-            placeholder="أضف أي ملاحظات إضافية حول الطلب"
-          ></textarea>
-        </div>
-
-        <!-- زر حفظ التعديلات -->
-        <button
-          type="submit"
-          class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-          :disabled="submitting"
-        >
-          <span v-if="submitting">جاري الحفظ…</span>
-          <span v-else>حفظ التغييرات</span>
-        </button>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { supabase } from '@/services/supabase'
-import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers } from '@/utils/formatters'
-
-// دالة لمضاعفة كمية وسعر لحساب subtotal فردي
-function computeItemSubtotal(qty, price) {
-  return Math.round(qty * price * 100) / 100
-}
-
-// دالة لحساب مجمل الطلب بما فيها الضريبة
-function computeOrderTotals(items, taxRate) {
-  let sum = 0
-  items.forEach(it => {
-    sum += it.subtotal || 0
-  })
-  sum = Math.round(sum * 100) / 100
-  const taxAmt = Math.round(sum * (taxRate / 100) * 100) / 100
-  const grandTot = Math.round((sum + taxAmt) * 100) / 100
-  return { subtotal: sum, taxAmount: taxAmt, total: grandTot }
-}
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { supabase } from '../services/supabase.js'
+import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers, autoConvertNumbers, formatInteger } from '../utils/formatters.js'
+import { 
+  DEFAULT_TAX_RATE, 
+  calculateOrderTotals, 
+  calculateItemTotal, 
+  normalizeTaxRate,
+  getTaxRate
+} from '../utils/taxCalculations.js'
+import NumberInput from '../components/NumberInput.vue'
 
 export default {
   name: 'EditOrderView',
+  components: {
+    NumberInput
+  },
   setup() {
-    const route = useRoute()
     const router = useRouter()
-
-    // استخراج معرف الطلب وتحويله إلى رقم
-    const rawId = route.params.id
-    const orderId = Number(rawId)
-
+    const route = useRoute()
     const loading = ref(true)
     const submitting = ref(false)
-
-    // إذا كان المعرف غير صالح، عُد إلى صفحة القائمة
-    if (!Number.isInteger(orderId) || orderId <= 0) {
-      alert('معرّف الطلب غير صالح')
-      router.push('/orders')
-      return {}
-    }
-
-    // هيكلة بيانات الطلب الأولية
+    
+    // بيانات الطلب
     const order = ref({
-      id: orderId,
+      id: null,
       customer_name: '',
       customer_phone: '',
       customer_address: '',
-      product_description: '',
       items: [
         {
-          id: null,
           name: '',
-          description: '',
-          notes: '',
           quantity: 1,
           price: 0,
-          subtotal: 0
+          total: 0
         }
       ],
       subtotal: 0,
-      tax_rate: 0,
-      tax_amount: 0,
+      taxRate: 15, // نسبة الضريبة القابلة للتعديل
+      tax: 0,
       total: 0,
       notes: '',
-      status: ''
+      status: 'new'
     })
-
-    // جلب بيانات الطلب ومنتجاته
+    
+    // حساب إجمالي المنتج
+    const calculateItemTotal = (index) => {
+      const item = order.value.items[index]
+      if (item) {
+        // ضمان أن الكمية رقم صحيح
+        const quantity = Math.round(parseEnglishNumber(item.quantity)) || 1
+        const price = parseEnglishNumber(item.price) || 0
+        
+        // تحديث الكمية في النموذج لتكون رقماً صحيحاً
+        item.quantity = quantity
+        
+        // تقريب إجمالي المنتج إلى منزلتين عشريتين
+        item.total = Math.round((quantity * price) * 100) / 100
+        
+        // إعادة حساب إجمالي الطلب فوراً
+        calculateOrderTotal()
+      }
+    }
+    
+    // حساب إجمالي الطلب مع التقريب إلى منزلتين عشريتين
+    const calculateOrderTotal = () => {
+      // حساب المجموع الفرعي
+      const subtotal = order.value.items.reduce((sum, item) => {
+        const itemTotal = parseEnglishNumber(item.total) || 0
+        return sum + itemTotal
+      }, 0)
+      
+      // تقريب المجموع الفرعي إلى منزلتين عشريتين
+      const roundedSubtotal = Math.round(subtotal * 100) / 100
+      
+      // حساب نسبة الضريبة (تحويل من نسبة مئوية إلى عدد عشري)
+      const taxRate = parseEnglishNumber(order.value.taxRate) / 100
+      
+      // حساب قيمة الضريبة وتقريبها إلى منزلتين عشريتين
+      const tax = Math.round((roundedSubtotal * taxRate) * 100) / 100
+      
+      // حساب الإجمالي النهائي وتقريبه إلى منزلتين عشريتين
+      const total = Math.round((roundedSubtotal + tax) * 100) / 100
+      
+      // تحديث القيم في النموذج
+      order.value.subtotal = roundedSubtotal
+      order.value.tax = tax
+      order.value.total = total
+    }
+    
+    // معالجة تغيير نسبة الضريبة
+    const handleTaxRateChange = () => {
+      // تحويل الأرقام العربية إلى إنجليزية فوراً
+      if (order.value.taxRate) {
+        const englishValue = convertToEnglishNumbers(order.value.taxRate.toString())
+        const parsedValue = parseFloat(englishValue)
+        if (!isNaN(parsedValue)) {
+          order.value.taxRate = parsedValue
+        }
+      }
+      // إعادة حساب الإجمالي فوراً
+      calculateOrderTotal()
+    }
+    
+    // معالجة فقدان التركيز من حقل نسبة الضريبة
+    const handleTaxRateBlur = () => {
+      // ضمان أن القيمة رقمية وفي النطاق المسموح
+      const taxRate = parseEnglishNumber(order.value.taxRate)
+      if (taxRate < 0) {
+        order.value.taxRate = 0
+      } else if (taxRate > 100) {
+        order.value.taxRate = 100
+      } else {
+        order.value.taxRate = Math.round(taxRate * 10) / 10 // تقريب إلى منزلة عشرية واحدة
+      }
+      calculateOrderTotal()
+    }
+    
+    // إضافة منتج جديد
+    const addItem = () => {
+      order.value.items.push({
+        name: '',
+        quantity: 1,
+        price: 0,
+        total: 0
+      })
+    }
+    
+    // حذف منتج
+    const removeItem = (index) => {
+      if (order.value.items.length > 1) {
+        order.value.items.splice(index, 1)
+        calculateOrderTotal()
+      }
+    }
+    
+    // جلب بيانات الطلب
     const fetchOrder = async () => {
+      loading.value = true
+      
       try {
-        loading.value = true
-
-        // 1) جلب بيانات الطلب نفسها
-        const { data: ordData, error: orderErr } = await supabase
+        // جلب بيانات الطلب الأساسية
+        const { data, error } = await supabase
           .from('orders')
           .select('*')
-          .eq('id', orderId)
+          .eq('id', route.params.id)
           .single()
-        if (orderErr) throw orderErr
-
-        // 2) جلب جميع منتجات هذا الطلب
-        const { data: prodData, error: prodErr } = await supabase
+        
+        if (error) throw error
+        
+        // جلب منتجات الطلب من الجدول المنفصل
+        const { data: productsData, error: productsError } = await supabase
           .from('order_products')
           .select('*')
-          .eq('order_id', orderId)
-        if (prodErr) throw prodErr
-
-        // 3) ملء الحقول الرئيسية في order
-        order.value.customer_name = ordData.customer_name
-        order.value.customer_phone = ordData.customer_phone
-        order.value.customer_address = ordData.customer_address
-        order.value.product_description = ordData.product_description
-        order.value.subtotal = ordData.subtotal
-        order.value.tax_rate = ordData.tax_rate
-        order.value.tax_amount = ordData.tax_amount
-        order.value.total = ordData.total
-        order.value.notes = ordData.notes || ''
-        order.value.status = ordData.status
-
-        // 4) إذا كانت هناك منتجات، املأها؛ وإلا اترك صفًا واحدًا فارغًا
-        if (prodData && prodData.length > 0) {
-          order.value.items = prodData.map(item => ({
-            id: item.id,
-            name: item.name,
-            description: item.description || '',
-            notes: item.notes || '',
-            quantity: Number(item.quantity),
-            price: Number(item.unit_price),
-            subtotal: Number(item.subtotal)
+          .eq('order_id', route.params.id)
+        
+        let items = []
+        
+        if (!productsError && productsData && productsData.length > 0) {
+          // استخدام المنتجات من الجدول المنفصل (النظام الجديد)
+          items = productsData.map(product => ({
+            name: product.name || '',
+            description: product.description || '',
+            notes: product.notes || '',
+            quantity: product.quantity || 1,
+            price: product.unit_price || 0,
+            total: product.subtotal || 0
           }))
         } else {
-          order.value.items = [
+          // استخدام البيانات القديمة للتوافق مع الطلبات السابقة
+          items = [
             {
-              id: null,
-              name: '',
+              name: data.product_description || '',
               description: '',
               notes: '',
-              quantity: 1,
-              price: 0,
-              subtotal: 0
+              quantity: data.quantity || 1,
+              price: data.unit_price || (data.subtotal / (data.quantity || 1)),
+              total: data.subtotal || 0
             }
           ]
         }
-      } catch (err) {
-        console.error('خطأ في جلب بيانات الطلب:', err)
-        alert('فشل جلب بيانات الطلب')
-        router.push('/orders')
+        
+        // تحويل بيانات الطلب إلى تنسيق النموذج
+        order.value = {
+          id: data.id,
+          customer_name: data.customer_name || '',
+          customer_phone: data.customer_phone || '',
+          customer_address: data.customer_address || '',
+          items: items,
+          subtotal: data.subtotal || 0,
+          taxRate: data.tax_rate || 0,
+          tax: data.tax_amount || 0,
+          total: data.total || 0,
+          notes: data.notes || '',
+          status: data.status || 'new'
+        }
+        
+        // إعادة حساب الإجماليات للتأكد من الدقة
+        calculateOrderTotal()
+      } catch (error) {
+        console.error('خطأ في جلب بيانات الطلب:', error)
+        order.value = { id: null }
       } finally {
         loading.value = false
       }
     }
-
-    // عند فقدان التركيز في حقل الكمية أو السعر لأي منتج
-    const onItemBlur = (index) => {
-      const item = order.value.items[index]
-      if (!item) return
-
-      // تأكد من أن qty و price عددان صحيحان أو عشريان
-      const qty = Math.max(1, parseEnglishNumber(item.quantity) || 1)
-      const pr = parseEnglishNumber(item.price) || 0
-
-      item.quantity = qty
-      item.subtotal = computeItemSubtotal(qty, pr)
-
-      // بعد تعديل أي صف، أعد حساب مجمل الطلب
-      onOrderRecalc()
-    }
-
-    // إعادة حساب مجمل الطلب بعد أي تغيير
-    const onOrderRecalc = () => {
-      const { subtotal, taxAmount, total } = computeOrderTotals(
-        order.value.items,
-        order.value.tax_rate
-      )
-      order.value.subtotal = subtotal
-      order.value.tax_amount = taxAmount
-      order.value.total = total
-    }
-
-    // عند فقدان التركيز من حقل نسبة الضريبة
-    const onTaxBlur = () => {
-      let tr = parseEnglishNumber(order.value.tax_rate)
-      if (isNaN(tr) || tr < 0) tr = 0
-      if (tr > 100) tr = 100
-      order.value.tax_rate = Math.round(tr * 10) / 10
-
-      onOrderRecalc()
-    }
-
-    // إضافة صف جديد للمنتج
-    const addItem = () => {
-      order.value.items.push({
-        id: null,
-        name: '',
-        description: '',
-        notes: '',
-        quantity: 1,
-        price: 0,
-        subtotal: 0
-      })
-      onOrderRecalc()
-    }
-
-    // إزالة صف منتج
-    const removeItem = (index) => {
-      order.value.items.splice(index, 1)
-      onOrderRecalc()
-    }
-
-    // حفظ التعديلات في قاعدة البيانات
+    
+    // تحديث الطلب
     const updateOrder = async () => {
       try {
         submitting.value = true
-
-        // أعد حساب كل صف قبل الحفظ
-        order.value.items.forEach((_, idx) => onItemBlur(idx))
-
-        // تأكد من أن المجمل النهائي أكبر من صفر
-        if (!order.value.total || order.value.total <= 0) {
-          alert('يجب أن يكون إجمالي الطلب أكبر من صفر')
-          submitting.value = false
+        
+        // التحقق من صحة بيانات العميل
+        if (!order.value.customer_name || order.value.customer_name.trim() === '') {
+          alert('يرجى إدخال اسم العميل')
           return
         }
-
-        // حدد وصف المنتج الأول
-        const first = order.value.items[0]
-        const prodDesc = first && first.name ? first.name : 'منتج غير محدد'
-
-        // جهّز كائن التحديث لجدول orders
-        const updatedOrderData = {
+        
+        if (!order.value.customer_phone || order.value.customer_phone.trim() === '') {
+          alert('يرجى إدخال رقم هاتف العميل')
+          return
+        }
+        
+        if (!order.value.customer_address || order.value.customer_address.trim() === '') {
+          alert('يرجى إدخال عنوان العميل')
+          return
+        }
+        
+        // التحقق من صحة رقم الهاتف
+        const phoneRegex = /^[0-9+\-\s()]{8,15}$/
+        if (!phoneRegex.test(order.value.customer_phone.trim())) {
+          alert('يرجى إدخال رقم هاتف صحيح (8-15 رقم)')
+          return
+        }
+        
+        // التحقق من صحة بيانات المنتجات
+        if (!order.value.items || order.value.items.length === 0) {
+          alert('يرجى إضافة منتج واحد على الأقل')
+          return
+        }
+        
+        for (let i = 0; i < order.value.items.length; i++) {
+          const item = order.value.items[i]
+          
+          if (!item.name || item.name.trim() === '') {
+            alert(`يرجى إدخال اسم المنتج رقم ${i + 1}`)
+            return
+          }
+          
+          if (!item.quantity || item.quantity <= 0) {
+            alert(`يرجى إدخال كمية صحيحة للمنتج رقم ${i + 1}`)
+            return
+          }
+          
+          if (!item.price || item.price <= 0) {
+            alert(`يرجى إدخال سعر صحيح للمنتج رقم ${i + 1}`)
+            return
+          }
+        }
+        
+        // التحقق من أن الإجمالي أكبر من صفر
+        if (!order.value.total || order.value.total <= 0) {
+          alert('إجمالي الطلب يجب أن يكون أكبر من صفر')
+          return
+        }
+        
+        // إعداد بيانات الطلب للتحديث - استخدام النظام الجديد للمنتجات المنفصلة
+        // حفظ المنتج الأول فقط في product_description للتوافق مع النظام القديم
+        const firstProduct = order.value.items[0]
+        const productDescription = firstProduct ? firstProduct.name : 'منتج غير محدد'
+        
+        // إزالة الملاحظات التلقائية - استخدام ملاحظات المستخدم فقط
+        const finalNotes = order.value.notes ? order.value.notes.trim() : ''
+        
+        const orderData = {
           customer_name: order.value.customer_name.trim(),
           customer_phone: order.value.customer_phone.trim(),
           customer_address: order.value.customer_address.trim(),
-          product_description: prodDesc,
-          subtotal: order.value.subtotal,
-          tax_rate: order.value.tax_rate,
-          tax_amount: order.value.tax_amount,
-          total: order.value.total,
-          notes: order.value.notes.trim(),
-          status: order.value.status
+          product_description: productDescription,
+          subtotal: Number(order.value.subtotal),
+          tax_rate: Number(order.value.taxRate),
+          tax_amount: Number(order.value.tax),
+          total: Number(order.value.total),
+          notes: finalNotes
         }
-
-        // حدّث الطلب نفسه
-        const { error: orderErr } = await supabase
+        
+        // تحديث الطلب في قاعدة البيانات
+        const { data, error } = await supabase
           .from('orders')
-          .update(updatedOrderData)
-          .eq('id', orderId)
-        if (orderErr) throw orderErr
-
-        // احذف منتجات الطلب القديمة
-        const { error: delErr } = await supabase
+          .update(orderData)
+          .eq('id', order.value.id)
+          .select()
+        
+        if (error) throw error
+        
+        // حذف المنتجات القديمة من الجدول المنفصل
+        const { error: deleteError } = await supabase
           .from('order_products')
           .delete()
-          .eq('order_id', orderId)
-        if (delErr) throw delErr
-
-        // أعد إدخال المنتجات الجديدة
+          .eq('order_id', order.value.id)
+        
+        if (deleteError) {
+          console.warn('تحذير: لم يتم العثور على منتجات قديمة للحذف:', deleteError)
+        }
+        
+        // حفظ كل منتج منفصل في جدول order_products
         for (const item of order.value.items) {
           const productData = {
-            order_id: orderId,
-            name: item.name,
+            order_id: order.value.id,
+            name: item.name || '',
             description: item.description || '',
             notes: item.notes || '',
-            quantity: item.quantity,
-            unit_price: item.price,
-            subtotal: item.subtotal
+            quantity: Number(item.quantity),
+            unit_price: Number(item.price),
+            subtotal: Number(item.quantity * item.price)
           }
-          const { error: prodErr } = await supabase
+          
+          const { error: productError } = await supabase
             .from('order_products')
             .insert([productData])
-          if (prodErr) throw prodErr
+          
+          if (productError) {
+            console.error('خطأ في حفظ المنتج:', productError)
+            throw productError
+          }
         }
-
-        // عند النجاح، عد إلى صفحة قائمة الطلبات
-        router.push('/orders')
-      } catch (err) {
-        console.error('خطأ في تحديث الطلب:', err)
-        alert('حدث خطأ أثناء حفظ التعديلات.')
+        
+        alert('تم تحديث الطلب بنجاح')
+        router.push(`/orders/${order.value.id}`)
+      } catch (error) {
+        console.error('خطأ في تحديث الطلب:', error)
+        alert('حدث خطأ أثناء تحديث الطلب: ' + (error.message || 'خطأ غير معروف'))
       } finally {
         submitting.value = false
       }
     }
-
-    // عند توقيت تهيئة الصفحة
+    
+    // مراقبة تغييرات المنتجات
+    watch(() => order.value.items, () => {
+      calculateOrderTotal()
+    }, { deep: true })
+    
+    // تهيئة الصفحة
     onMounted(() => {
       fetchOrder()
     })
-
-    // راقب تغيّر كمية أو سعر أي صف وأعد الحساب تلقائيًا
-    watch(
-      () => order.value.items.map(it => ({ q: it.quantity, p: it.price })),
-      () => onOrderRecalc(),
-      { deep: true }
-    )
-
+    
     return {
-      order,
       loading,
+      order,
       submitting,
-      onItemBlur,
-      onTaxBlur,
+      calculateItemTotal,
+      calculateOrderTotal,
+      handleTaxRateChange,
+      handleTaxRateBlur,
       addItem,
       removeItem,
       updateOrder,
@@ -506,6 +628,7 @@ export default {
 </script>
 
 <style scoped>
+/* تنسيقات إضافية إذا لزم الأمر */
 .form-label {
   @apply block text-sm font-medium text-gray-700 mb-1;
 }
@@ -526,3 +649,4 @@ export default {
   @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
 }
 </style>
+

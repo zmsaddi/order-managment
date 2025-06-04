@@ -161,7 +161,7 @@
                     class="text-purple-600 hover:text-purple-800"
                     title="إنشاء فاتورة"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd" />
                     </svg>
                   </button>
@@ -241,7 +241,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass, convertToEnglishNumbers, shareOrderOnWhatsApp } from '@/utils/formatters'
-import { deleteOrderById, generateOrderInvoice, canDeleteOrder } from '@/utils/orderUtils'
+import { deleteOrderById, generateOrderInvoice, canEditOrder, canDeleteOrder } from '@/utils/orderUtils'
 
 export default {
   name: 'OrdersView',
@@ -256,72 +256,78 @@ export default {
     const sortField = ref('created_at')
     const sortDirection = ref('desc')
     
-    // المستخدم الحالي
+    // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
     
-    // نافذة الحذف
+    // متغيرات نافذة الحذف
     const showDeleteModal = ref(false)
     const orderToDelete = ref(null)
     const deleting = ref(false)
     
-    // هل يمكن حذف الطلب؟
-    const canDeleteOrderCheck = (order) => {
-      return canDeleteOrder(order, user.value)
-    }
+    // التحقق من صلاحيات المستخدم
+    const isAdmin = computed(() => {
+      return ['admin', 'sales_manager'].includes(user.value.role)
+    })
     
-    // تصفية الطلبات بالبحث والفلاتر
+    // تصفية الطلبات حسب البحث والفلاتر
     const filteredOrders = computed(() => {
       let result = orders.value
       
+      // تصفية حسب البحث
       if (searchQuery.value) {
-        const q = searchQuery.value.toLowerCase()
-        result = result.filter(o => 
-          o.customer_name.toLowerCase().includes(q) ||
-          o.id.toString().includes(q)
+        const query = searchQuery.value.toLowerCase()
+        result = result.filter(order => 
+          order.customer_name.toLowerCase().includes(query) || 
+          order.id.toString().includes(query)
         )
       }
       
+      // تصفية حسب الحالة
       if (statusFilter.value) {
-        result = result.filter(o => o.status === statusFilter.value)
+        result = result.filter(order => order.status === statusFilter.value)
       }
       
+      // تصفية حسب التاريخ (من)
       if (dateFrom.value) {
-        const from = new Date(dateFrom.value)
-        result = result.filter(o => new Date(o.created_at) >= from)
+        const fromDate = new Date(dateFrom.value)
+        result = result.filter(order => new Date(order.created_at) >= fromDate)
       }
       
+      // تصفية حسب التاريخ (إلى)
       if (dateTo.value) {
-        const to = new Date(dateTo.value)
-        to.setHours(23, 59, 59, 999)
-        result = result.filter(o => new Date(o.created_at) <= to)
+        const toDate = new Date(dateTo.value)
+        toDate.setHours(23, 59, 59, 999) // نهاية اليوم
+        result = result.filter(order => new Date(order.created_at) <= toDate)
       }
       
-      // الترتيب حسب الحقول
+      // ترتيب النتائج
       result.sort((a, b) => {
-        let aVal = a[sortField.value]
-        let bVal = b[sortField.value]
+        let aValue = a[sortField.value]
+        let bValue = b[sortField.value]
         
+        // تحويل التواريخ
         if (sortField.value === 'created_at') {
-          aVal = new Date(aVal)
-          bVal = new Date(bVal)
+          aValue = new Date(aValue)
+          bValue = new Date(bValue)
         }
         
+        // تحويل الأرقام
         if (sortField.value === 'total' || sortField.value === 'id') {
-          aVal = parseFloat(aVal) || 0
-          bVal = parseFloat(bVal) || 0
+          aValue = parseFloat(aValue) || 0
+          bValue = parseFloat(bValue) || 0
         }
         
         if (sortDirection.value === 'asc') {
-          return aVal > bVal ? 1 : -1
+          return aValue > bValue ? 1 : -1
         } else {
-          return aVal < bVal ? 1 : -1
+          return aValue < bValue ? 1 : -1
         }
       })
       
       return result
     })
     
-    // جلب جميع الطلبات (لا يوجد .eq('id'…))
+    // جلب الطلبات
     const fetchOrders = async () => {
       try {
         loading.value = true
@@ -329,16 +335,19 @@ export default {
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false })
+        
         if (error) throw error
+        
         orders.value = data || []
-      } catch (err) {
-        console.error('خطأ في جلب الطلبات:', err)
+      } catch (error) {
+        console.error('خطأ في جلب الطلبات:', error)
         orders.value = []
       } finally {
         loading.value = false
       }
     }
     
+    // تغيير حقل الفرز
     const sortBy = (field) => {
       if (sortField.value === field) {
         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
@@ -348,6 +357,7 @@ export default {
       }
     }
     
+    // إعادة تعيين الفلاتر
     const resetFilters = () => {
       searchQuery.value = ''
       statusFilter.value = ''
@@ -355,24 +365,34 @@ export default {
       dateTo.value = ''
     }
     
+    // مشاركة عبر واتساب - استخدام الدالة الموحدة
     const shareOnWhatsApp = (order) => {
       shareOrderOnWhatsApp(order)
     }
     
+    // إنشاء فاتورة - استخدام الدالة الموحدة
     const generateInvoice = async (order) => {
       await generateOrderInvoice(order)
     }
     
+    // التحقق من إمكانية حذف الطلب - استخدام الدالة الموحدة
+    const canDeleteOrderCheck = (order) => {
+      return canDeleteOrder(order, user.value)
+    }
+    
+    // تأكيد حذف الطلب
     const confirmDeleteOrder = (order) => {
       orderToDelete.value = order
       showDeleteModal.value = true
     }
     
+    // إغلاق نافذة الحذف
     const closeDeleteModal = () => {
       showDeleteModal.value = false
       orderToDelete.value = null
     }
     
+    // حذف الطلب - استخدام الدالة الموحدة
     const deleteOrder = async () => {
       if (!orderToDelete.value) return
       
@@ -381,10 +401,12 @@ export default {
       const success = await deleteOrderById(
         orderToDelete.value.id,
         () => {
-          orders.value = orders.value.filter(o => o.id !== orderToDelete.value.id)
+          // عند النجاح - إزالة الطلب من القائمة
+          orders.value = orders.value.filter(order => order.id !== orderToDelete.value.id)
           closeDeleteModal()
         },
         (error) => {
+          // عند الخطأ - إظهار رسالة خطأ
           console.error('خطأ في حذف الطلب:', error)
           alert('حدث خطأ أثناء حذف الطلب')
         }
@@ -393,6 +415,7 @@ export default {
       deleting.value = false
     }
     
+    // تهيئة الصفحة
     onMounted(() => {
       fetchOrders()
     })
@@ -410,12 +433,13 @@ export default {
       showDeleteModal,
       orderToDelete,
       deleting,
-      canDeleteOrder: canDeleteOrderCheck,
+      isAdmin,
       fetchOrders,
       sortBy,
       resetFilters,
       shareOnWhatsApp,
       generateInvoice,
+      canDeleteOrder: canDeleteOrderCheck,
       confirmDeleteOrder,
       closeDeleteModal,
       deleteOrder,
@@ -429,5 +453,6 @@ export default {
 </script>
 
 <style scoped>
-/* تنسيقات إضافية إن لزم الأمر */
+/* تنسيقات إضافية إذا لزم الأمر */
 </style>
+
