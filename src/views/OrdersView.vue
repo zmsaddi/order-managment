@@ -45,7 +45,7 @@
                   id="customer-phone"
                   v-model="order.customer_phone"
                   placeholder="+34 600 123 456"
-                  pattern="^\+?[0-9\s()\-]{8,20}$"
+                  pattern="^\+?[0-9 ()-]{8,20}$"
                   class="form-input"
                   required
                 />
@@ -257,7 +257,6 @@ export default {
     const loading = ref(true)
     const submitting = ref(false)
 
-    // هيكلة بيانات الطلب مع الحقول اللازمة
     const order = ref({
       id: orderId,
       customer_name: '',
@@ -283,12 +282,10 @@ export default {
       status: ''
     })
 
-    // جلب بيانات الطلب ومنتجاته عند التحميل
     const fetchOrder = async () => {
       try {
         loading.value = true
 
-        // جلب بيانات الطلب من جدول orders
         const { data: ordData, error: orderErr } = await supabase
           .from('orders')
           .select('*')
@@ -296,14 +293,12 @@ export default {
           .single()
         if (orderErr) throw orderErr
 
-        // جلب منتجات الطلب من order_products
         const { data: prodData, error: prodErr } = await supabase
           .from('order_products')
           .select('*')
           .eq('order_id', orderId)
         if (prodErr) throw prodErr
 
-        // ملء بيانات الطلب
         order.value.customer_name = ordData.customer_name
         order.value.customer_phone = ordData.customer_phone
         order.value.customer_address = ordData.customer_address
@@ -315,7 +310,6 @@ export default {
         order.value.notes = ordData.notes || ''
         order.value.status = ordData.status
 
-        // إذا كان هناك منتجات فليتم ملؤها، وإلا احتفظ برقم واحد فارغ
         if (prodData && prodData.length > 0) {
           order.value.items = prodData.map(item => ({
             id: item.id,
@@ -348,7 +342,6 @@ export default {
       }
     }
 
-    // دالة لحساب مجاميع عنصر واحد
     const calculateItemSubtotal = (index) => {
       const item = order.value.items[index]
       if (!item) return
@@ -359,7 +352,6 @@ export default {
       calculateOrderTotal()
     }
 
-    // دالة لحساب مجاميع الطلب
     const calculateOrderTotal = () => {
       const { subtotal, taxAmount, total } = calculateOrderTotals(
         order.value.items,
@@ -370,7 +362,6 @@ export default {
       order.value.total = total
     }
 
-    // معالجة فقدان التركيز من حقل نسبة الضريبة
     const handleTaxRateBlur = () => {
       let tr = parseEnglishNumber(order.value.tax_rate)
       if (isNaN(tr) || tr < 0) tr = 0
@@ -379,7 +370,6 @@ export default {
       calculateOrderTotal()
     }
 
-    // إضافة صف جديد
     const addItem = () => {
       order.value.items.push({
         id: null,
@@ -393,32 +383,26 @@ export default {
       calculateOrderTotal()
     }
 
-    // إزالة صف موجود
     const removeItem = (index) => {
       order.value.items.splice(index, 1)
       calculateOrderTotal()
     }
 
-    // تحديث الطلب
     const updateOrder = async () => {
       try {
         submitting.value = true
 
-        // 1) أعد حساب كل صنف
         order.value.items.forEach((_, idx) => calculateItemSubtotal(idx))
 
-        // 2) تحقق أن الإجمالي>0
         if (!order.value.total || order.value.total <= 0) {
           alert('يجب أن يكون إجمالي الطلب أكبر من صفر')
           submitting.value = false
           return
         }
 
-        // 3) حدّد وصف المنتج (اسم المنتج الأول)
         const first = order.value.items[0]
         const prodDesc = first && first.name ? first.name : 'منتج غير محدد'
 
-        // 4) جهّز كائن بيانات orders
         const updatedOrderData = {
           customer_name: order.value.customer_name.trim(),
           customer_phone: order.value.customer_phone.trim(),
@@ -432,21 +416,18 @@ export default {
           status: order.value.status
         }
 
-        // 5) حدّث صف الـ orders بناءً على الـ id
         const { error: orderErr } = await supabase
           .from('orders')
           .update(updatedOrderData)
           .eq('id', orderId)
         if (orderErr) throw orderErr
 
-        // 6) احذف كل منتجات هذا الطلب من order_products
         const { error: delErr } = await supabase
           .from('order_products')
           .delete()
           .eq('order_id', orderId)
         if (delErr) throw delErr
 
-        // 7) أعد إدخال كل الأصناف المحدثة
         for (const item of order.value.items) {
           const productData = {
             order_id: orderId,
@@ -463,7 +444,6 @@ export default {
           if (prodErr) throw prodErr
         }
 
-        // 8) العودة إلى صفحة الطلبات
         router.push('/orders')
       } catch (err) {
         console.error('خطأ في تحديث الطلب:', err)
@@ -477,7 +457,6 @@ export default {
       fetchOrder()
     })
 
-    // راقب تغيير حقل items لإعادة حساب الطلب
     watch(
       () => order.value.items.map(it => ({ q: it.quantity, p: it.price })),
       () => calculateOrderTotal(),
@@ -502,5 +481,23 @@ export default {
 </script>
 
 <style scoped>
-/* التنسيقات الإضافية إن وجدت */
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.form-input {
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm;
+}
+
+.btn {
+  @apply inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+}
 </style>
