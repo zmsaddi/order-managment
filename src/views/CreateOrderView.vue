@@ -426,11 +426,22 @@ export default {
         }
         
         // إعداد بيانات الطلب للحفظ - استخدام الحقول الموجودة فقط في قاعدة البيانات
+        // حساب الكمية الإجمالية وسعر الوحدة المتوسط
+        const totalQuantity = order.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
+        const averageUnitPrice = totalQuantity > 0 ? (order.value.subtotal / totalQuantity) : 0
+        
+        // تجميع أسماء المنتجات
+        const productDescriptions = order.value.items.map(item => 
+          `${item.name} (الكمية: ${item.quantity})`
+        ).join(', ')
+        
         const orderData = {
           customer_name: order.value.customer_name.trim(),
           customer_phone: order.value.customer_phone.trim(),
           customer_address: order.value.customer_address.trim(),
-          product_description: order.value.items[0]?.name?.trim() || '',
+          product_description: productDescriptions,
+          quantity: totalQuantity,
+          unit_price: Math.round(averageUnitPrice * 100) / 100,
           subtotal: Number(order.value.subtotal),
           tax_rate: Number(order.value.taxRate),
           tax_amount: Number(order.value.tax),

@@ -268,17 +268,24 @@ export default {
       return user.value.id === order.value.sales_rep_id
     })
     
-    // حساب سعر الوحدة من المجموع الفرعي والكمية
+    // حساب سعر الوحدة من البيانات المتاحة
     const calculateUnitPrice = (orderData) => {
-      if (!orderData || !orderData.subtotal || !orderData.quantity) return 0
+      if (!orderData) return 0
       
+      // إذا كان unit_price موجود ومحفوظ، استخدمه
+      if (orderData.unit_price && orderData.unit_price > 0) {
+        return parseEnglishNumber(orderData.unit_price)
+      }
+      
+      // إذا لم يكن موجود، احسبه من المجموع الفرعي والكمية
       const subtotal = parseEnglishNumber(orderData.subtotal) || 0
       const quantity = parseEnglishNumber(orderData.quantity) || 1
       
-      // حساب سعر الوحدة وتقريبه إلى منزلتين عشريتين
-      const unitPrice = Math.round((subtotal / quantity) * 100) / 100
+      if (subtotal > 0 && quantity > 0) {
+        return Math.round((subtotal / quantity) * 100) / 100
+      }
       
-      return unitPrice
+      return 0
     }
     
     // الحصول على نص حالة الطلب
@@ -356,12 +363,39 @@ export default {
     const shareOnWhatsApp = () => {
       if (!order.value) return
       
+      // تحليل وصف المنتجات لاستخراج المنتجات المتعددة
+      let productsText = ''
+      if (order.value.product_description) {
+        // إذا كان الوصف يحتوي على منتجات متعددة (مفصولة بفاصلة)
+        if (order.value.product_description.includes(',')) {
+          const products = order.value.product_description.split(',').map(p => p.trim())
+          productsText = products.map((product, index) => `${index + 1}. ${product}`).join('\n')
+        } else {
+          // منتج واحد
+          productsText = `1. ${order.value.product_description}`
+          if (order.value.quantity && order.value.quantity > 1) {
+            productsText += ` (الكمية: ${convertToEnglishNumbers(order.value.quantity.toString())})`
+          }
+        }
+      }
+      
       const message = `
-طلب رقم: ${order.value.id}
-العميل: ${order.value.customer_name}
-المنتج: ${order.value.product_description}
-الكمية: ${order.value.quantity}
-الإجمالي: ${formatCurrency(order.value.total)}
+🛍️ *تفاصيل الطلب*
+
+📋 *رقم الطلب:* ${order.value.id}
+
+👤 *بيانات العميل:*
+• الاسم: ${order.value.customer_name}
+• الهاتف: ${order.value.customer_phone || 'غير متوفر'}
+• العنوان: ${order.value.customer_address || 'غير متوفر'}
+
+📦 *المنتجات:*
+${productsText}
+
+💰 *الإجمالي النهائي:* ${formatCurrency(order.value.total)}
+
+---
+تم إنشاء هذا الطلب من نظام إدارة الطلبات
       `.trim()
       
       const encodedMessage = encodeURIComponent(message)
