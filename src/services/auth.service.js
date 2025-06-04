@@ -1,15 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
-import { config } from '@/config.js'
-
-// إنشاء عميل Supabase باستخدام القيم من ملف config.js
-const supabaseUrl = config.supabaseUrl
-const supabaseKey = config.supabaseKey
-export const supabase = createClient(supabaseUrl, supabaseKey)
+import { supabase } from '@/services/supabase'
+import { useAuthStore } from '@/stores/auth'
 
 // إنشاء خدمة المصادقة
 export const authService = {
   // تسجيل الدخول
   async login(email, password) {
+    const authStore = useAuthStore()
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -55,6 +52,9 @@ export const authService = {
 
         if (createError) throw createError
 
+        // تحديث الجلسة في متجر Pinia
+        authStore.setSession(data.session)
+        
         return {
           user: newUser,
           session: data.session
@@ -64,6 +64,9 @@ export const authService = {
       }
     }
 
+    // تحديث الجلسة في متجر Pinia
+    authStore.setSession(data.session)
+    
     return {
       user: userData,
       session: data.session
@@ -72,24 +75,27 @@ export const authService = {
 
   // تسجيل الخروج
   async logout() {
+    const authStore = useAuthStore()
     const { error } = await supabase.auth.signOut()
     if (error) throw error
+    
+    // تحديث الجلسة في متجر Pinia
+    authStore.setSession(null)
   },
 
   // إنشاء مستخدم جديد
   async createUser(userData) {
+    const authStore = useAuthStore()
+    
     // التحقق من صلاحيات المستخدم الحالي
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
+    const currentUser = authStore.user?.user_metadata
+    if (!['admin', 'sales_manager'].includes(currentUser?.role)) {
       throw new Error('ليس لديك صلاحية لإنشاء مستخدمين جدد')
     }
 
     try {
       const email = userData.email;
       const password = userData.password;
-      
-      // حفظ جلسة المدير الحالية قبل إنشاء المستخدم الجديد
-      const { data: { session: adminSession } } = await supabase.auth.getSession();
       
       // استخدام signUp مباشرة لإنشاء المستخدم
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -125,12 +131,6 @@ export const authService = {
 
       if (userError) throw userError
 
-      // استعادة جلسة المدير الأصلية بعد إنشاء المستخدم الجديد
-      await supabase.auth.setSession({
-        access_token: adminSession.access_token,
-        refresh_token: adminSession.refresh_token,
-      });
-
       // تحديث قائمة المستخدمين في الواجهة
       return {
         user: newUser
@@ -143,11 +143,13 @@ export const authService = {
 
   // تحديث بيانات المستخدم
   async updateUser(userId, userData) {
+    const authStore = useAuthStore()
+    
     // التحقق من صلاحيات المستخدم الحالي
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const currentUser = authStore.user?.user_metadata
     
     // التحقق من أن المستخدم الحالي هو مدير أو يقوم بتحديث بياناته الشخصية
-    if (!['admin', 'sales_manager'].includes(currentUser.role) && currentUser.id !== userId) {
+    if (!['admin', 'sales_manager'].includes(currentUser?.role) && currentUser?.id !== userId) {
       throw new Error('ليس لديك صلاحية لتحديث بيانات هذا المستخدم')
     }
 
@@ -175,9 +177,11 @@ export const authService = {
 
   // حذف مستخدم
   async deleteUser(userId) {
+    const authStore = useAuthStore()
+    
     // التحقق من صلاحيات المستخدم الحالي
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
+    const currentUser = authStore.user?.user_metadata
+    if (!['admin', 'sales_manager'].includes(currentUser?.role)) {
       throw new Error('ليس لديك صلاحية لحذف المستخدمين')
     }
 
@@ -196,7 +200,7 @@ export const authService = {
     }
 
     // التحقق من أن مدير المبيعات لا يحاول حذف مدير مبيعات آخر
-    if (currentUser.role === 'sales_manager' && userData.role === 'sales_manager') {
+    if (currentUser?.role === 'sales_manager' && userData.role === 'sales_manager') {
       throw new Error('لا يمكن لمدير المبيعات حذف مدير مبيعات آخر')
     }
 
@@ -215,9 +219,11 @@ export const authService = {
 
   // إعادة تعيين كلمة المرور
   async resetPassword(userId, newPassword) {
+    const authStore = useAuthStore()
+    
     // التحقق من صلاحيات المستخدم الحالي
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
+    const currentUser = authStore.user?.user_metadata
+    if (!['admin', 'sales_manager'].includes(currentUser?.role)) {
       throw new Error('ليس لديك صلاحية لإعادة تعيين كلمات المرور')
     }
 
@@ -234,9 +240,11 @@ export const authService = {
   
   // تحديث كلمة مرور المستخدم
   async updateUserPassword(userId, newPassword) {
+    const authStore = useAuthStore()
+    
     // التحقق من صلاحيات المستخدم الحالي
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!['admin', 'sales_manager'].includes(currentUser.role)) {
+    const currentUser = authStore.user?.user_metadata
+    if (!['admin', 'sales_manager'].includes(currentUser?.role)) {
       throw new Error('ليس لديك صلاحية لتحديث كلمات المرور')
     }
 
@@ -263,9 +271,11 @@ export const authService = {
 
   // التحقق من حالة المصادقة
   async checkAuth() {
+    const authStore = useAuthStore()
     const { data: { session } } = await supabase.auth.getSession()
     
     if (!session) {
+      authStore.setSession(null)
       return { user: null, session: null }
     }
 
@@ -282,6 +292,9 @@ export const authService = {
       return { user: null, session: null }
     }
 
+    // تحديث الجلسة في متجر Pinia
+    authStore.setSession(session)
+    
     return {
       user: userData,
       session

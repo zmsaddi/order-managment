@@ -1,18 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 import { config } from '@/config'
 
-// إنشاء دالة للحصول على عميل Supabase
-let supabaseInstance = null
-
-export const getSupabase = () => {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(
-      config.supabaseUrl,
-      config.supabaseKey
-    )
+// إنشاء عميل Supabase موحد مع خيارات متقدمة
+export const supabase = createClient(
+  config.supabaseUrl,
+  config.supabaseKey,
+  {
+    auth: {
+      autoRefreshToken: true,  // يجدد التوكين دون تدخّل
+      persistSession: true,    // يُخزِّن الجلسة في IndexedDB افتراضيًّا
+      detectSessionInUrl: true
+    },
   }
-  return supabaseInstance
-}
-
-// للتوافق مع الكود الحالي
-export const supabase = getSupabase()
+)

@@ -6,9 +6,9 @@
       class="flex items-center focus:outline-none"
       ref="profileButton"
     >
-      <span class="text-sm text-gray-600 ml-2 hidden sm:block">{{ user.name }}</span>
+      <span class="text-sm text-gray-600 ml-2 hidden sm:block">{{ userName }}</span>
       <div class="w-9 h-9 rounded-full bg-sky-600 flex items-center justify-center text-white shadow-sm hover:bg-sky-700 transition-colors">
-        {{ user.name ? user.name.charAt(0) : 'U' }}
+        {{ userName ? userName.charAt(0) : 'U' }}
       </div>
     </button>
     
@@ -27,8 +27,8 @@
         ref="profileMenu"
       >
         <div class="py-2 px-4 border-b border-gray-100">
-          <p class="text-sm font-medium text-gray-900 text-center">{{ user.name }}</p>
-          <p class="text-xs text-gray-500 text-center">{{ user.email }}</p>
+          <p class="text-sm font-medium text-gray-900 text-center">{{ userName }}</p>
+          <p class="text-xs text-gray-500 text-center">{{ userEmail }}</p>
         </div>
         <div class="py-1">
           <!-- الملف الشخصي -->
@@ -82,25 +82,29 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { authService } from '@/services/auth.service'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'UserProfileMenu',
-  props: {
-    user: {
-      type: Object,
-      required: true
-    }
-  },
-  setup(props) {
+  setup() {
     const router = useRouter()
+    const authStore = useAuthStore()
     const isOpen = ref(false)
     const profileButton = ref(null)
     const profileMenu = ref(null)
     
+    // الحصول على بيانات المستخدم من متجر Pinia
+    const userName = computed(() => {
+      return authStore.user?.user_metadata?.name || 'مستخدم'
+    })
+    
+    const userEmail = computed(() => {
+      return authStore.user?.email || ''
+    })
+    
     // التحقق من صلاحيات المستخدم
     const isAdmin = computed(() => {
-      return ['admin', 'sales_manager'].includes(props.user.role)
+      return ['admin', 'sales_manager'].includes(authStore.role)
     })
     
     // فتح وإغلاق القائمة
@@ -115,8 +119,7 @@ export default {
     // تسجيل الخروج
     const logout = async () => {
       try {
-        await authService.logout()
-        localStorage.removeItem('user')
+        await authStore.signOut()
         router.push({ name: 'login' })
       } catch (error) {
         console.error('خطأ في تسجيل الخروج:', error)
@@ -153,6 +156,8 @@ export default {
     return {
       isOpen,
       isAdmin,
+      userName,
+      userEmail,
       toggleMenu,
       closeMenu,
       logout,

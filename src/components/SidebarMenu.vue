@@ -111,28 +111,19 @@
 <script>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { authService } from '@/services/auth.service'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'SidebarMenu',
-  props: {
-    user: {
-      type: Object,
-      required: true
-    },
-    showMobileSidebar: {
-      type: Boolean,
-      default: false
-    }
-  },
   emits: ['toggle-sidebar'],
   setup(props, { emit }) {
     const router = useRouter()
+    const authStore = useAuthStore()
     const showMobileMenu = ref(false)
     
     // التحقق من صلاحيات المستخدم
     const isAdmin = computed(() => {
-      return ['admin', 'sales_manager'].includes(props.user.role)
+      return ['admin', 'sales_manager'].includes(authStore.role)
     })
     
     // تبديل حالة القائمة الجانبية للجوال
@@ -143,8 +134,7 @@ export default {
     // تسجيل الخروج
     const logout = async () => {
       try {
-        await authService.logout()
-        localStorage.removeItem('user')
+        await authStore.signOut()
         router.push({ name: 'login' })
       } catch (error) {
         console.error('خطأ في تسجيل الخروج:', error)

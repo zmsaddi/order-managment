@@ -52,11 +52,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/services/auth.service'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'LoginView',
   setup() {
     const router = useRouter()
+    const authStore = useAuthStore()
     const email = ref('')
     const password = ref('')
     const loading = ref(false)
@@ -67,10 +69,11 @@ export default {
         loading.value = true
         errorMessage.value = ''
         
-        const result = await authService.login(email.value, password.value)
-        
-        // تخزين بيانات المستخدم في التخزين المحلي
-        localStorage.setItem('user', JSON.stringify(result.user))
+        // استخدام متجر Pinia مباشرة للتسجيل
+        await authStore.signIn({
+          email: email.value,
+          password: password.value
+        })
         
         // توجيه المستخدم إلى لوحة التحكم
         router.push({ name: 'dashboard' })

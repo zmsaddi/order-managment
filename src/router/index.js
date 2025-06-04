@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { supabase } from '@/services/supabase'
+import { useAuthStore } from '@/stores/auth'
 
 // استيراد الصفحات
 import LoginView from '@/views/LoginView.vue'
@@ -83,33 +83,28 @@ const router = createRouter({
 // حماية المسارات التي تتطلب المصادقة
 router.beforeEach(async (to, from, next) => {
   try {
-    // التحقق من وجود جلسة مستخدم
-    const { data: { session } } = await supabase.auth.getSession()
+    // استخدام متجر Pinia للمصادقة
+    const authStore = useAuthStore()
     const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
     const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
 
     // إذا كان المسار يتطلب المصادقة ولا توجد جلسة، توجيه المستخدم إلى صفحة تسجيل الدخول
-    if (requiresAuth && !session) {
+    if (requiresAuth && !authStore.isAuth) {
       next({ name: 'login' })
       return
     }
 
     // إذا كان المستخدم مسجل الدخول ويحاول الوصول إلى صفحة تسجيل الدخول، توجيهه إلى لوحة التحكم
-    if (session && to.name === 'login') {
+    if (authStore.isAuth && to.name === 'login') {
       next({ name: 'dashboard' })
       return
     }
 
     // إذا كان المسار يتطلب صلاحيات المدير، تحقق من دور المستخدم
-    if (requiresAdmin && session) {
-      // جلب بيانات المستخدم من جدول المستخدمين
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .single()
-
-      if (error || !userData || !['admin', 'sales_manager'].includes(userData.role)) {
+    if (requiresAdmin && authStore.isAuth) {
+      const userRole = authStore.role
+      
+      if (!userRole || !['admin', 'sales_manager'].includes(userRole)) {
         // إذا لم يكن المستخدم مديراً، توجيهه إلى لوحة التحكم
         next({ name: 'dashboard' })
         return
