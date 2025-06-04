@@ -1,190 +1,235 @@
 <template>
-  <div>
-    <!-- محتوى الصفحة -->
-    <main class="flex-1 overflow-y-auto p-4">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">إدارة الطلبات</h1>
-        <router-link to="/orders/create" class="btn btn-primary flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-          </svg>
-          إضافة طلب جديد
-        </router-link>
-      </div>
+  <div class="min-h-screen bg-gray-50">
+    <!-- القائمة الجانبية والشريط العلوي -->
+    <div class="flex h-screen overflow-hidden">
+      <!-- القائمة الجانبية -->
+      <SidebarMenu :user="user" />
       
-      <!-- فلاتر البحث -->
-      <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label for="search" class="form-label">بحث</label>
-            <div class="relative">
-              <input 
-                type="text" 
-                id="search" 
-                v-model="searchQuery" 
-                placeholder="اسم العميل، رقم الطلب..." 
-                class="form-input pr-8"
-              />
-              <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+      <!-- المحتوى الرئيسي -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- الشريط العلوي -->
+        <header class="bg-white shadow-sm z-10">
+          <div class="flex items-center justify-between p-4">
+            <div class="flex items-center">
+              <button @click="toggleSidebar" class="md:hidden ml-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
+              </button>
+              <h2 class="text-xl font-semibold text-gray-800">الطلبات</h2>
+            </div>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-600 ml-2">{{ user.name }}</span>
+              <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white">
+                {{ user.name.charAt(0) }}
               </div>
             </div>
           </div>
-          
-          <div>
-            <label for="status-filter" class="form-label">الحالة</label>
-            <select id="status-filter" v-model="statusFilter" class="form-input">
-              <option value="">جميع الحالات</option>
-              <option value="new">جديد</option>
-              <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
-              <option value="delivered">تم التسليم</option>
-              <option value="cancelled">ملغى</option>
-            </select>
-          </div>
-          
-          <div>
-            <label for="date-from" class="form-label">من تاريخ</label>
-            <input 
-              type="date" 
-              id="date-from" 
-              v-model="dateFrom" 
-              class="form-input"
-            />
-          </div>
-          
-          <div>
-            <label for="date-to" class="form-label">إلى تاريخ</label>
-            <input 
-              type="date" 
-              id="date-to" 
-              v-model="dateTo" 
-              class="form-input"
-            />
+        </header>
+        
+        <!-- القائمة الجانبية للجوال -->
+        <div v-if="showMobileSidebar" class="fixed inset-0 z-20 md:hidden">
+          <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
+          <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
+            <div class="p-4 border-b border-sky-700 flex justify-between items-center">
+              <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
+              <button @click="toggleSidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <SidebarMenu :user="user" mobile @item-click="toggleSidebar" />
           </div>
         </div>
         
-        <div class="flex justify-end mt-4">
-          <button @click="resetFilters" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 ml-2">
-            إعادة تعيين
-          </button>
-          <button @click="fetchOrders" class="btn btn-primary">
-            تطبيق الفلتر
-          </button>
-        </div>
-      </div>
-      
-      <!-- جدول الطلبات -->
-      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div v-if="loading" class="text-center py-8">
-          <p>جاري تحميل البيانات...</p>
-        </div>
-        
-        <div v-else-if="filteredOrders.length === 0" class="text-center py-8">
-          <p v-if="searchQuery || statusFilter || dateFrom || dateTo">لا توجد نتائج مطابقة للبحث</p>
-          <p v-else>لا توجد طلبات</p>
-        </div>
-        
-        <div v-else class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="bg-gray-50">
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('id')">
-                  رقم الطلب
-                  <span v-if="sortField === 'id'" class="mr-1">
-                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                  </span>
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('customer_name')">
-                  العميل
-                  <span v-if="sortField === 'customer_name'" class="mr-1">
-                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                  </span>
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('total')">
-                  المبلغ
-                  <span v-if="sortField === 'total'" class="mr-1">
-                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                  </span>
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('status')">
-                  الحالة
-                  <span v-if="sortField === 'status'" class="mr-1">
-                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                  </span>
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('created_at')">
-                  التاريخ
-                  <span v-if="sortField === 'created_at'" class="mr-1">
-                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                  </span>
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              <tr v-for="order in filteredOrders" :key="order.id" class="hover:bg-gray-50">
-                <td class="px-4 py-3 text-sm text-gray-900">#{{ order.id }}</td>
-                <td class="px-4 py-3 text-sm text-gray-900">{{ order.customer_name }}</td>
-                <td class="px-4 py-3 text-sm text-gray-900">{{ formatCurrency(order.total) }}</td>
-                <td class="px-4 py-3 text-sm">
-                  <span :class="getOrderStatusClass(order.status)" class="px-2 py-1 text-xs rounded-full">
-                    {{ getOrderStatusText(order.status) }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(order.created_at) }}</td>
-                <td class="px-4 py-3 text-sm text-gray-900">
-                  <div class="flex space-x-2 space-x-reverse">
-                    <router-link 
-                      :to="`/orders/${order.id}`" 
-                      class="text-sky-600 hover:text-sky-800"
-                      title="عرض التفاصيل"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                      </svg>
-                    </router-link>
-                    
-                    <button 
-                      @click="shareOnWhatsApp(order)" 
-                      class="text-green-600 hover:text-green-800"
-                      title="مشاركة عبر واتساب"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                      </svg>
-                    </button>
-                    
-                    <button 
-                      @click="generateInvoice(order)" 
-                      class="text-purple-600 hover:text-purple-800"
-                      title="إنشاء فاتورة"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd" />
-                      </svg>
-                    </button>
-                    
-                    <button 
-                      v-if="canDeleteOrder(order)" 
-                      @click="confirmDeleteOrder(order)" 
-                      class="text-red-600 hover:text-red-800"
-                      title="حذف"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                      </svg>
-                    </button>
+        <!-- محتوى الصفحة -->
+        <main class="flex-1 overflow-y-auto p-4">
+          <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">إدارة الطلبات</h1>
+            <router-link to="/orders/create" class="btn btn-primary flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+              إضافة طلب جديد
+            </router-link>
+          </div>
+          
+          <!-- فلاتر البحث -->
+          <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label for="search" class="form-label">بحث</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="search" 
+                    v-model="searchQuery" 
+                    placeholder="اسم العميل، رقم الطلب..." 
+                    class="form-input pr-8"
+                  />
+                  <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </div>
+              </div>
+              
+              <div>
+                <label for="status-filter" class="form-label">الحالة</label>
+                <select id="status-filter" v-model="statusFilter" class="form-input">
+                  <option value="">جميع الحالات</option>
+                  <option value="new">جديد</option>
+                  <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
+                  <option value="delivered">تم التسليم</option>
+                  <option value="cancelled">ملغى</option>
+                </select>
+              </div>
+              
+              <div>
+                <label for="date-from" class="form-label">من تاريخ</label>
+                <input 
+                  type="date" 
+                  id="date-from" 
+                  v-model="dateFrom" 
+                  class="form-input"
+                />
+              </div>
+              
+              <div>
+                <label for="date-to" class="form-label">إلى تاريخ</label>
+                <input 
+                  type="date" 
+                  id="date-to" 
+                  v-model="dateTo" 
+                  class="form-input"
+                />
+              </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button @click="resetFilters" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 ml-2">
+                إعادة تعيين
+              </button>
+              <button @click="fetchOrders" class="btn btn-primary">
+                تطبيق الفلتر
+              </button>
+            </div>
+          </div>
+          
+          <!-- جدول الطلبات -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div v-if="loading" class="text-center py-8">
+              <p>جاري تحميل البيانات...</p>
+            </div>
+            
+            <div v-else-if="filteredOrders.length === 0" class="text-center py-8">
+              <p v-if="searchQuery || statusFilter || dateFrom || dateTo">لا توجد نتائج مطابقة للبحث</p>
+              <p v-else>لا توجد طلبات</p>
+            </div>
+            
+            <div v-else class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="bg-gray-50">
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('id')">
+                      رقم الطلب
+                      <span v-if="sortField === 'id'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('customer_name')">
+                      العميل
+                      <span v-if="sortField === 'customer_name'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('total')">
+                      المبلغ
+                      <span v-if="sortField === 'total'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('status')">
+                      الحالة
+                      <span v-if="sortField === 'status'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('created_at')">
+                      التاريخ
+                      <span v-if="sortField === 'created_at'" class="mr-1">
+                        {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                      </span>
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <tr v-for="order in filteredOrders" :key="order.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-900">#{{ order.id }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">{{ order.customer_name }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">{{ formatCurrency(order.total) }}</td>
+                    <td class="px-4 py-3 text-sm">
+                      <span :class="getOrderStatusClass(order.status)" class="px-2 py-1 text-xs rounded-full">
+                        {{ getOrderStatusText(order.status) }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(order.created_at) }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">
+                      <div class="flex space-x-2 space-x-reverse">
+                        <router-link 
+                          :to="`/orders/${order.id}`" 
+                          class="text-sky-600 hover:text-sky-800"
+                          title="عرض التفاصيل"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                          </svg>
+                        </router-link>
+                        
+                        <button 
+                          @click="shareOnWhatsApp(order)" 
+                          class="text-green-600 hover:text-green-800"
+                          title="مشاركة عبر واتساب"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                          </svg>
+                        </button>
+                        
+                        <button 
+                          @click="generateInvoice(order)" 
+                          class="text-purple-600 hover:text-purple-800"
+                          title="إنشاء فاتورة"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                        
+                        <button 
+                          v-if="canDeleteOrder(order)" 
+                          @click="confirmDeleteOrder(order)" 
+                          class="text-red-600 hover:text-red-800"
+                          title="حذف"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
       </div>
-    </main>
+    </div>
     
     <!-- نافذة تأكيد الحذف -->
     <div v-if="showDeleteModal" class="fixed inset-0 z-30 overflow-y-auto">
@@ -239,16 +284,21 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
+import { authService } from '@/services/auth.service'
+import SidebarMenu from '@/components/SidebarMenu.vue'
 import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass } from '@/utils/formatters'
-import { generateInvoice } from '@/utils/invoiceGenerator'
 
 export default {
   name: 'OrdersView',
+  components: {
+    SidebarMenu
+  },
   setup() {
     const router = useRouter()
+    const showMobileSidebar = ref(false)
     const loading = ref(true)
     const orders = ref([])
     const searchQuery = ref('')
@@ -257,15 +307,9 @@ export default {
     const dateTo = ref('')
     const sortField = ref('created_at')
     const sortDirection = ref('desc')
-    const showDeleteModal = ref(false)
-    const orderToDelete = ref(null)
-    const deleting = ref(false)
     
     // الحصول على بيانات المستخدم الحالي من التخزين المحلي
     const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
-    
-    // تحديث عنوان الصفحة عند تحميل المكون
-    const emit = defineEmits(['update-page-title'])
     
     // التحقق من صلاحيات المستخدم
     const isAdmin = computed(() => {
@@ -280,9 +324,8 @@ export default {
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase()
         result = result.filter(order => 
-          order.id.toString().includes(query) ||
-          order.customer_name.toLowerCase().includes(query) ||
-          (order.customer_phone && order.customer_phone.includes(query))
+          order.customer_name.toLowerCase().includes(query) || 
+          order.id.toString().includes(query)
         )
       }
       
@@ -294,52 +337,82 @@ export default {
       // تصفية حسب التاريخ (من)
       if (dateFrom.value) {
         const fromDate = new Date(dateFrom.value)
-        fromDate.setHours(0, 0, 0, 0)
         result = result.filter(order => new Date(order.created_at) >= fromDate)
       }
       
       // تصفية حسب التاريخ (إلى)
       if (dateTo.value) {
         const toDate = new Date(dateTo.value)
-        toDate.setHours(23, 59, 59, 999)
+        toDate.setHours(23, 59, 59, 999) // نهاية اليوم
         result = result.filter(order => new Date(order.created_at) <= toDate)
       }
       
-      // ترتيب النتائج
+      // فرز النتائج
       result = [...result].sort((a, b) => {
-        let valA = a[sortField.value]
-        let valB = b[sortField.value]
+        let valA, valB;
         
-        // التعامل مع القيم النصية
-        if (typeof valA === 'string') {
-          valA = valA.toLowerCase()
-          valB = valB.toLowerCase()
+        // تحديد قيم المقارنة بناءً على حقل الفرز
+        switch (sortField.value) {
+          case 'id':
+            valA = a.id;
+            valB = b.id;
+            break;
+          case 'customer_name':
+            valA = a.customer_name.toLowerCase();
+            valB = b.customer_name.toLowerCase();
+            break;
+          case 'total':
+            valA = parseFloat(a.total);
+            valB = parseFloat(b.total);
+            break;
+          case 'status':
+            valA = a.status;
+            valB = b.status;
+            break;
+          case 'created_at':
+          default:
+            valA = new Date(a.created_at).getTime();
+            valB = new Date(b.created_at).getTime();
+            break;
         }
         
-        // التعامل مع التواريخ
-        if (sortField.value === 'created_at' || sortField.value === 'updated_at') {
-          valA = new Date(valA)
-          valB = new Date(valB)
-        }
-        
+        // تطبيق اتجاه الفرز
         if (sortDirection.value === 'asc') {
-          return valA > valB ? 1 : -1
+          return valA > valB ? 1 : valA < valB ? -1 : 0;
         } else {
-          return valA < valB ? 1 : -1
+          return valA < valB ? 1 : valA > valB ? -1 : 0;
         }
-      })
+      });
       
-      return result
+      return result;
     })
     
-    // جلب الطلبات
+    // تبديل حالة القائمة الجانبية للجوال
+    const toggleSidebar = () => {
+      showMobileSidebar.value = !showMobileSidebar.value
+    }
+    
+    // تغيير حقل الفرز
+    const sortBy = (field) => {
+      // إذا كان نفس الحقل، نعكس الاتجاه
+      if (sortField.value === field) {
+        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+      } else {
+        // إذا كان حقل جديد، نعين الحقل ونبدأ بالترتيب التنازلي
+        sortField.value = field
+        sortDirection.value = 'desc'
+      }
+    }
+    
+    // جلب الطلبات من قاعدة البيانات
     const fetchOrders = async () => {
+      loading.value = true
+      
       try {
-        loading.value = true
-        
         let query = supabase
           .from('orders')
           .select('*')
+          .order('created_at', { ascending: false })
         
         // إذا كان المستخدم مندوباً، اعرض طلباته فقط
         if (user.value.role === 'representative') {
@@ -350,7 +423,7 @@ export default {
         
         if (error) throw error
         
-        orders.value = data
+        orders.value = data || []
       } catch (error) {
         console.error('خطأ في جلب الطلبات:', error)
       } finally {
@@ -364,35 +437,18 @@ export default {
       statusFilter.value = ''
       dateFrom.value = ''
       dateTo.value = ''
-      sortField.value = 'created_at'
-      sortDirection.value = 'desc'
-    }
-    
-    // تغيير حقل الترتيب
-    const sortBy = (field) => {
-      if (sortField.value === field) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-      } else {
-        sortField.value = field
-        sortDirection.value = 'asc'
-      }
-    }
-    
-    // الحصول على نص حالة الطلب
-    const getOrderStatusText = (status) => {
-      return getOrderStatusText(status)
-    }
-    
-    // الحصول على فئة CSS لحالة الطلب
-    const getOrderStatusClass = (status) => {
-      return getOrderStatusClass(status)
+      fetchOrders()
     }
     
     // التحقق من إمكانية حذف الطلب
     const canDeleteOrder = (order) => {
-      // فقط المدراء يمكنهم حذف الطلبات
-      return isAdmin.value
+      return isAdmin.value || (user.value.id === order.sales_rep_id && order.status === 'new')
     }
+    
+    // متغيرات لنافذة تأكيد الحذف
+    const showDeleteModal = ref(false)
+    const orderToDelete = ref(null)
+    const deleting = ref(false)
     
     // فتح نافذة تأكيد الحذف
     const confirmDeleteOrder = (order) => {
@@ -410,9 +466,9 @@ export default {
     const deleteOrder = async () => {
       if (!orderToDelete.value) return
       
+      deleting.value = true
+      
       try {
-        deleting.value = true
-        
         const { error } = await supabase
           .from('orders')
           .delete()
@@ -426,7 +482,7 @@ export default {
         closeDeleteModal()
       } catch (error) {
         console.error('خطأ في حذف الطلب:', error)
-        alert('حدث خطأ أثناء حذف الطلب')
+        alert('حدث خطأ أثناء حذف الطلب. يرجى المحاولة مرة أخرى.')
       } finally {
         deleting.value = false
       }
@@ -434,26 +490,40 @@ export default {
     
     // مشاركة الطلب عبر واتساب
     const shareOnWhatsApp = (order) => {
-      const text = `طلب رقم #${order.id}
+      const message = `
+طلب رقم: ${order.id}
 العميل: ${order.customer_name}
 المنتج: ${order.product_description}
 الكمية: ${order.quantity}
+السعر: ${formatCurrency(order.unit_price)}
 الإجمالي: ${formatCurrency(order.total)}
-الحالة: ${getOrderStatusText(order.status)}`
+التاريخ: ${formatDate(order.created_at)}
+      `.trim()
       
-      const encodedText = encodeURIComponent(text)
-      window.open(`https://wa.me/?text=${encodedText}`, '_blank')
+      const encodedMessage = encodeURIComponent(message)
+      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
     }
     
+    // إنشاء فاتورة للطلب
+    const generateInvoice = (order) => {
+      // فتح صفحة تفاصيل الطلب مع تمرير معلمة لإنشاء الفاتورة
+      router.push({ 
+        name: 'order-details', 
+        params: { id: order.id },
+        query: { invoice: 'true' }
+      })
+    }
+    
+    // جلب الطلبات عند تحميل الصفحة
     onMounted(() => {
-      // تحديث عنوان الصفحة
-      emit('update-page-title', 'الطلبات')
-      document.title = 'الطلبات - نظام إدارة الطلبات'
       fetchOrders()
     })
     
     return {
       user,
+      isAdmin,
+      showMobileSidebar,
+      toggleSidebar,
       loading,
       orders,
       filteredOrders,
@@ -461,31 +531,27 @@ export default {
       statusFilter,
       dateFrom,
       dateTo,
-      sortField,
-      sortDirection,
-      showDeleteModal,
-      orderToDelete,
-      deleting,
       fetchOrders,
       resetFilters,
-      sortBy,
+      formatCurrency,
+      formatDate,
       getOrderStatusText,
       getOrderStatusClass,
       canDeleteOrder,
+      showDeleteModal,
+      orderToDelete,
+      deleting,
       confirmDeleteOrder,
       closeDeleteModal,
       deleteOrder,
       shareOnWhatsApp,
-      generateInvoice,
-      formatCurrency,
-      formatDate
+      generateInvoice
     }
   }
 }
 </script>
 
 <style scoped>
-/* تنسيقات إضافية */
 .form-label {
   @apply block text-sm font-medium text-gray-700 mb-1;
 }
@@ -495,14 +561,14 @@ export default {
 }
 
 .btn {
-  @apply px-4 py-2 rounded-md text-sm font-medium focus:outline-none transition-colors;
+  @apply inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
 }
 
 .btn-primary {
-  @apply bg-sky-600 text-white hover:bg-sky-700;
+  @apply bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
 }
 
 .btn-danger {
-  @apply bg-red-600 text-white hover:bg-red-700;
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
 }
 </style>

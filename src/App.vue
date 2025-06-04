@@ -1,77 +1,34 @@
 <template>
   <div id="app">
     <div v-if="isAuthenticated" class="min-h-screen bg-gray-50">
-      <!-- القائمة الجانبية والمحتوى الرئيسي -->
+      <!-- القائمة الجانبية والشريط العلوي -->
       <div class="flex h-screen overflow-hidden">
-        <!-- القائمة الجانبية للشاشات الكبيرة - ثابتة دائماً -->
-        <SidebarMenu :user="user" class="hidden md:block" />
+        <!-- القائمة الجانبية -->
+        <SidebarMenu :user="user" />
         
         <!-- المحتوى الرئيسي -->
         <div class="flex-1 flex flex-col overflow-hidden">
-          <!-- الشريط العلوي - ثابت دائماً -->
-          <TopBar :user="user" :pageTitle="pageTitle" />
+          <!-- الشريط العلوي -->
+          <header class="bg-white shadow-sm z-10">
+            <div class="flex items-center justify-between p-4">
+              <div class="flex items-center">
+                <button @click="toggleSidebar" class="md:hidden ml-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+                <h2 class="text-xl font-semibold text-gray-800">{{ pageTitle }}</h2>
+              </div>
+              <div class="flex items-center">
+                <UserProfileMenu :user="user" />
+              </div>
+            </div>
+          </header>
           
-          <!-- محتوى الصفحة - مع هامش علوي لتجنب تداخل الشريط العلوي -->
-          <main class="flex-1 overflow-y-auto pt-16">
-            <router-view 
-              @update-page-title="updatePageTitle" 
-              :key="$route.fullPath"
-            />
+          <!-- محتوى الصفحة -->
+          <main class="flex-1 overflow-y-auto">
+            <router-view @update-page-title="updatePageTitle" />
           </main>
-        </div>
-      </div>
-      
-      <!-- القائمة الجانبية للجوال -->
-      <div v-if="showMobileSidebar" class="fixed inset-0 z-50 md:hidden">
-        <div class="absolute inset-0 bg-black opacity-50" @click="toggleSidebar"></div>
-        <div class="absolute inset-y-0 right-0 w-64 bg-sky-800 text-white">
-          <div class="p-4 border-b border-sky-700 flex justify-between items-center">
-            <h1 class="text-xl font-bold">نظام إدارة الطلبات</h1>
-            <button @click="toggleSidebar">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <nav class="mt-4">
-            <ul class="space-y-1">
-              <!-- لوحة التحكم - متاح للجميع -->
-              <li>
-                <router-link to="/dashboard" @click="toggleSidebar" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/dashboard' }">
-                  <span class="ml-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                    </svg>
-                  </span>
-                  <span>لوحة التحكم</span>
-                </router-link>
-              </li>
-              
-              <!-- الطلبات - متاح للجميع -->
-              <li>
-                <router-link to="/orders" @click="toggleSidebar" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/orders' }">
-                  <span class="ml-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
-                    </svg>
-                  </span>
-                  <span>الطلبات</span>
-                </router-link>
-              </li>
-              
-              <!-- التقارير - متاح للجميع (مع اختلاف المحتوى حسب الدور) -->
-              <li>
-                <router-link to="/reports" @click="toggleSidebar" class="flex items-center px-4 py-3 hover:bg-sky-700 transition-colors" :class="{ 'bg-sky-700': $route.path === '/reports' }">
-                  <span class="ml-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                  </span>
-                  <span>التقارير</span>
-                </router-link>
-              </li>
-            </ul>
-          </nav>
         </div>
       </div>
     </div>
@@ -82,17 +39,17 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch, provide } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { authService } from '@/services/auth.service'
 import SidebarMenu from '@/components/SidebarMenu.vue'
-import TopBar from '@/components/TopBar.vue'
+import UserProfileMenu from '@/components/UserProfileMenu.vue'
 
 export default {
   name: 'App',
   components: {
     SidebarMenu,
-    TopBar
+    UserProfileMenu
   },
   setup() {
     const router = useRouter()
@@ -143,12 +100,41 @@ export default {
       }
     }
     
-    // توفير بيانات المستخدم وحالة القائمة الجانبية للمكونات الفرعية
-    provide('user', user)
-    provide('toggleSidebar', toggleSidebar)
+    // تعيين عنوان الصفحة الافتراضي بناءً على المسار
+    const setDefaultPageTitle = () => {
+      switch (route.path) {
+        case '/dashboard':
+          pageTitle.value = 'لوحة التحكم'
+          break
+        case '/orders':
+          pageTitle.value = 'الطلبات'
+          break
+        case '/reports':
+          pageTitle.value = 'التقارير'
+          break
+        case '/users':
+          pageTitle.value = 'المستخدمين'
+          break
+        case '/profile':
+          pageTitle.value = 'الملف الشخصي'
+          break
+        default:
+          if (route.path.startsWith('/orders/')) {
+            pageTitle.value = 'تفاصيل الطلب'
+          } else {
+            pageTitle.value = 'نظام إدارة الطلبات'
+          }
+      }
+    }
+    
+    // مراقبة تغيير المسار لتحديث عنوان الصفحة
+    watch(() => route.path, () => {
+      setDefaultPageTitle()
+    })
     
     onMounted(() => {
       checkAuth()
+      setDefaultPageTitle()
     })
     
     return {
