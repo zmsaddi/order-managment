@@ -40,7 +40,6 @@
               </div>
               <div>
                 <label for="customer-phone" class="form-label">رقم هاتف العميل <span class="text-red-500">*</span></label>
-                <!-- تم تعديل pattern للهروب الصحيح للأقواس والشرطة -->
                 <input
                   type="text"
                   id="customer-phone"
@@ -98,7 +97,7 @@
               <input
                 type="number"
                 v-model.number="item.quantity"
-                @blur="() => calculateItemSubtotal(index)"
+                @blur="() => recalcItemSubtotal(index)"
                 placeholder="1"
                 class="form-input text-center"
                 min="1"
@@ -109,7 +108,7 @@
               <input
                 type="number"
                 v-model.number="item.price"
-                @blur="() => calculateItemSubtotal(index)"
+                @blur="() => recalcItemSubtotal(index)"
                 placeholder="0.00"
                 class="form-input text-center"
                 min="0"
@@ -231,16 +230,19 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers } from '@/utils/formatters'
 
-// دوال لحساب المجاميع
-function calculateItemSubtotal(quantity, price) {
-  return Math.round((quantity * price) * 100) / 100
+// دالة مساعدة جديدة لحساب مجموع صف واحد
+function computeItemSubtotal(quantity, price) {
+  return Math.round(quantity * price * 100) / 100
 }
 
-function calculateOrderTotals(items, taxRate) {
+// دالة مساعدة جديدة لحساب إجمالي الطلب
+function computeOrderTotals(items, taxRate) {
   let sum = 0
-  items.forEach(it => { sum += it.subtotal || 0 })
+  items.forEach(it => {
+    sum += it.subtotal || 0
+  })
   sum = Math.round(sum * 100) / 100
-  const taxAmt   = Math.round((sum * (taxRate / 100)) * 100) / 100
+  const taxAmt = Math.round(sum * (taxRate / 100) * 100) / 100
   const grandTot = Math.round((sum + taxAmt) * 100) / 100
   return { subtotal: sum, taxAmount: taxAmt, total: grandTot }
 }
@@ -252,20 +254,20 @@ export default {
     const router = useRouter()
 
     // استخراج rawId وتحويله إلى رقم
-    const rawId   = route.params.id
+    const rawId = route.params.id
     const orderId = Number(rawId)
 
-    const loading    = ref(true)
+    const loading = ref(true)
     const submitting = ref(false)
 
-    // إذا كان orderId غير صالح، أعد التوجيه
+    // التحقق من صلاحية المعرف
     if (!Number.isInteger(orderId) || orderId <= 0) {
       alert('معرّف الطلب غير صالح')
       router.push('/orders')
       return {}
     }
 
-    // هيكلة بيانات الطلب
+    // هيكلة بيانات الطلب الأولية
     const order = ref({
       id: orderId,
       customer_name: '',
@@ -291,12 +293,12 @@ export default {
       status: ''
     })
 
-    // جلب بيانات الطلب ومنتجاته
+    // دالة لجلب بيانات الطلب ومنتجاته
     const fetchOrder = async () => {
       try {
         loading.value = true
 
-        // جلب بيانات الطلب نفسه
+        // جلب بيانات الطلب من جدول orders
         const { data: ordData, error: orderErr } = await supabase
           .from('orders')
           .select('*')
@@ -304,46 +306,48 @@ export default {
           .single()
         if (orderErr) throw orderErr
 
-        // جلب المنتجات المرتبطة بهذا الطلب
+        // جلب المنتجات المرتبطة من جدول order_products
         const { data: prodData, error: prodErr } = await supabase
           .from('order_products')
           .select('*')
           .eq('order_id', orderId)
         if (prodErr) throw prodErr
 
-        // ملء بيانات الطلب
-        order.value.customer_name       = ordData.customer_name
-        order.value.customer_phone      = ordData.customer_phone
-        order.value.customer_address    = ordData.customer_address
+        // ملء بيانات الطلب الأساسية
+        order.value.customer_name = ordData.customer_name
+        order.value.customer_phone = ordData.customer_phone
+        order.value.customer_address = ordData.customer_address
         order.value.product_description = ordData.product_description
-        order.value.subtotal            = ordData.subtotal
-        order.value.tax_rate            = ordData.tax_rate
-        order.value.tax_amount          = ordData.tax_amount
-        order.value.total               = ordData.total
-        order.value.notes               = ordData.notes || ''
-        order.value.status              = ordData.status
+        order.value.subtotal = ordData.subtotal
+        order.value.tax_rate = ordData.tax_rate
+        order.value.tax_amount = ordData.tax_amount
+        order.value.total = ordData.total
+        order.value.notes = ordData.notes || ''
+        order.value.status = ordData.status
 
-        // إذا كانت هناك منتجات، املأها؛ وإلا اترك صفًا فارغًا
+        // إذا كانت هناك منتجات في order_products، املأها؛ وإلا اترك صفًا واحدًا فارغًا
         if (prodData && prodData.length > 0) {
           order.value.items = prodData.map(item => ({
-            id:          item.id,
-            name:        item.name,
+            id: item.id,
+            name: item.name,
             description: item.description || '',
-            notes:       item.notes || '',
-            quantity:    Number(item.quantity),
-            price:       Number(item.unit_price),
-            subtotal:    Number(item.subtotal)
+            notes: item.notes || '',
+            quantity: Number(item.quantity),
+            price: Number(item.unit_price),
+            subtotal: Number(item.subtotal)
           }))
         } else {
-          order.value.items = [{
-            id:          null,
-            name:        '',
-            description: '',
-            notes:       '',
-            quantity:    1,
-            price:       0,
-            subtotal:    0
-          }]
+          order.value.items = [
+            {
+              id: null,
+              name: '',
+              description: '',
+              notes: '',
+              quantity: 1,
+              price: 0,
+              subtotal: 0
+            }
+          ]
         }
       } catch (err) {
         console.error('خطأ في جلب بيانات الطلب:', err)
@@ -354,26 +358,30 @@ export default {
       }
     }
 
-    // حساب مجاميع كل صف
-    const calculateItemSubtotal = (index) => {
+    // إعادة حساب مجموع عنصر واحد (تعيد قيمة) ثم تحديث الحقل وترحيل الإجماليات
+    const recalcItemSubtotal = (index) => {
       const item = order.value.items[index]
       if (!item) return
+
+      // اجعل القيم رقمية صحيحة
       const qty = Math.max(1, parseEnglishNumber(item.quantity) || 1)
-      const pr  = parseEnglishNumber(item.price) || 0
+      const pr = parseEnglishNumber(item.price) || 0
+
       item.quantity = qty
-      item.subtotal = calculateItemSubtotal(qty, pr)
-      calculateOrderTotal()
+      item.subtotal = computeItemSubtotal(qty, pr)
+
+      recalcOrderTotal()
     }
 
-    // حساب إجمالي الطلب
-    const calculateOrderTotal = () => {
-      const { subtotal, taxAmount, total } = calculateOrderTotals(
+    // إعادة حساب إجمالي الطلب بناءً على مجموع الصفوف
+    const recalcOrderTotal = () => {
+      const { subtotal, taxAmount, total } = computeOrderTotals(
         order.value.items,
         order.value.tax_rate
       )
-      order.value.subtotal   = subtotal
+      order.value.subtotal = subtotal
       order.value.tax_amount = taxAmount
-      order.value.total      = total
+      order.value.total = total
     }
 
     // معالجة فقدان التركيز من حقل نسبة الضريبة
@@ -382,86 +390,86 @@ export default {
       if (isNaN(tr) || tr < 0) tr = 0
       if (tr > 100) tr = 100
       order.value.tax_rate = Math.round(tr * 10) / 10
-      calculateOrderTotal()
+      recalcOrderTotal()
     }
 
-    // إضافة صف جديد للمنتج
+    // إضافة صف جديد لمنتج
     const addItem = () => {
       order.value.items.push({
-        id:          null,
-        name:        '',
+        id: null,
+        name: '',
         description: '',
-        notes:       '',
-        quantity:    1,
-        price:       0,
-        subtotal:    0
+        notes: '',
+        quantity: 1,
+        price: 0,
+        subtotal: 0
       })
-      calculateOrderTotal()
+      recalcOrderTotal()
     }
 
     // إزالة صف منتج
     const removeItem = (index) => {
       order.value.items.splice(index, 1)
-      calculateOrderTotal()
+      recalcOrderTotal()
     }
 
-    // حفظ التعديلات
+    // حفظ التعديلات على الطلب
     const updateOrder = async () => {
       try {
         submitting.value = true
 
-        // إعادة حساب كل صف
-        order.value.items.forEach((_, idx) => calculateItemSubtotal(idx))
+        // أعد حساب كل صف مرة أخيرة
+        order.value.items.forEach((_, idx) => recalcItemSubtotal(idx))
 
-        // تأكد من أن الإجمالي النهائي > 0
+        // تأكد من أن الإجمالي النهائي أكبر من صفر
         if (!order.value.total || order.value.total <= 0) {
           alert('يجب أن يكون إجمالي الطلب أكبر من صفر')
           submitting.value = false
           return
         }
 
-        // تحديد وصف المنتج الأول
+        // حدّد وصف المنتج الأول إن وُجد
         const first = order.value.items[0]
         const prodDesc = first && first.name ? first.name : 'منتج غير محدد'
 
-        // تجهيز كائن لتحديث جدول orders
+        // جهّز جسم التحديث لـ orders
         const updatedOrderData = {
-          customer_name:       order.value.customer_name.trim(),
-          customer_phone:      order.value.customer_phone.trim(),
-          customer_address:    order.value.customer_address.trim(),
+          customer_name: order.value.customer_name.trim(),
+          customer_phone: order.value.customer_phone.trim(),
+          customer_address: order.value.customer_address.trim(),
           product_description: prodDesc,
-          subtotal:            order.value.subtotal,
-          tax_rate:            order.value.tax_rate,
-          tax_amount:          order.value.tax_amount,
-          total:               order.value.total,
-          notes:               order.value.notes.trim(),
-          status:              order.value.status
+          subtotal: order.value.subtotal,
+          tax_rate: order.value.tax_rate,
+          tax_amount: order.value.tax_amount,
+          total: order.value.total,
+          notes: order.value.notes.trim(),
+          status: order.value.status
         }
 
-        // تحديث صف الطلب
+        // حدّث صف الطلب في جدول orders
         const { error: orderErr } = await supabase
           .from('orders')
           .update(updatedOrderData)
           .eq('id', orderId)
         if (orderErr) throw orderErr
 
-        // حذف المنتجات القديمة
+        // احذف المنتجات القديمة المرتبطة بهذا الطلب
         const { error: delErr } = await supabase
           .from('order_products')
           .delete()
           .eq('order_id', orderId)
         if (delErr) throw delErr
 
-        // إعادة إدخال المنتجات الجديدة
+        // أعد إدخال كل المنتجّات الجديدة
         for (const item of order.value.items) {
           const productData = {
-            order_id:   orderId,
-            name:       item.name,
-            description:item.description || '',
-            notes:      item.notes || '',
-            quantity:   item.quantity,
+            order_id: orderId,
+            name: item.name,
+            description: item.description || '',
+            notes: item.notes || '',
+            quantity: item.quantity,
             unit_price: item.price,
-            subtotal:   item.subtotal
+            subtotal: item.subtotal
           }
           const { error: prodErr } = await supabase
             .from('order_products')
@@ -469,7 +477,7 @@ export default {
           if (prodErr) throw prodErr
         }
 
-        // العودة إلى صفحة قائمة الطلبات
+        // بعد النجاح، ارجع إلى صفحة قائمة الطلبات
         router.push('/orders')
       } catch (err) {
         console.error('خطأ في تحديث الطلب:', err)
@@ -483,9 +491,10 @@ export default {
       fetchOrder()
     })
 
+    // راقب تغيّر الكمية أو السعر في أي صف لإعادة الحساب التلقائي
     watch(
       () => order.value.items.map(it => ({ q: it.quantity, p: it.price })),
-      () => calculateOrderTotal(),
+      () => recalcOrderTotal(),
       { deep: true }
     )
 
@@ -493,10 +502,11 @@ export default {
       order,
       loading,
       submitting,
+      recalcItemSubtotal,
+      recalcOrderTotal,
+      handleTaxRateBlur,
       addItem,
       removeItem,
-      calculateItemSubtotal,
-      handleTaxRateBlur,
       updateOrder,
       formatCurrency,
       parseEnglishNumber,
