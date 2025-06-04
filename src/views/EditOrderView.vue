@@ -487,24 +487,21 @@ export default {
           return
         }
         
-        // إعداد بيانات الطلب للتحديث - استخدام الحقول الموجودة فقط في قاعدة البيانات
+        // إعداد بيانات الطلب للتحديث - حفظ جميع المنتجات منفصلة
         // حساب الكمية الإجمالية وسعر الوحدة المتوسط للعرض فقط
         const totalQuantity = order.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
         const averageUnitPrice = totalQuantity > 0 ? (order.value.subtotal / totalQuantity) : 0
         
-        // حفظ المنتج الأول فقط في وصف المنتج (عدم التجميع)
-        const primaryProduct = order.value.items.length > 0 ? order.value.items[0] : null
-        const productDescription = primaryProduct ? 
-          `${primaryProduct.name}` : 
-          'منتج غير محدد'
-        
-        // حفظ تفاصيل جميع المنتجات في الملاحظات للمرجعية
-        const allProductsDetails = order.value.items.map(item => 
-          `${item.name} (الكمية: ${item.quantity}, السعر: €${item.price})`
-        ).join(', ')
+        // حفظ جميع المنتجات منفصلة في product_description كـ JSON
+        const productsData = order.value.items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        }))
+        const productDescription = JSON.stringify(productsData)
         
         // إضافة معلومات إضافية في الملاحظات
-        const additionalInfo = `المنتجات: ${allProductsDetails}\nالكمية الإجمالية: ${totalQuantity}\nسعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
+        const additionalInfo = `الكمية الإجمالية: ${totalQuantity}\nسعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
         const finalNotes = order.value.notes ? 
           `${order.value.notes.trim()}\n\n${additionalInfo}` : 
           additionalInfo

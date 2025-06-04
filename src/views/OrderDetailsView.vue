@@ -370,57 +370,64 @@ export default {
       }
     }
     
-    // مشاركة الطلب عبر واتساب - موحدة لجميع المنصات
+    // مشاركة الطلب عبر واتساب - تنسيق محسن وواضح
     const shareOnWhatsApp = () => {
       if (!order.value) return
       
-      // استخراج معلومات المنتجات من الملاحظات
+      // استخراج معلومات المنتجات من product_description (JSON)
       let productsText = ''
-      if (order.value.notes && order.value.notes.includes('المنتجات:')) {
-        // استخراج قائمة المنتجات من الملاحظات
-        const match = order.value.notes.match(/المنتجات:\s*([^\n]+)/)
-        if (match && match[1]) {
-          const products = match[1].split(',').map(p => p.trim())
-          productsText = products.map((product, index) => `${index + 1}. ${product}`).join('\n')
+      try {
+        if (order.value.product_description) {
+          // محاولة تحليل JSON
+          const products = JSON.parse(order.value.product_description)
+          if (Array.isArray(products) && products.length > 0) {
+            productsText = products.map((product, index) => 
+              `${index + 1}. ${product.name} - الكمية: ${convertToEnglishNumbers(product.quantity.toString())} - السعر: €${convertToEnglishNumbers(product.price.toString())}`
+            ).join('\n')
+          } else {
+            // إذا لم يكن JSON، استخدم النص كما هو
+            productsText = `1. ${order.value.product_description}`
+          }
         }
-      } else if (order.value.product_description) {
-        // إذا لم توجد في الملاحظات، استخدم وصف المنتج
-        productsText = `1. ${order.value.product_description}`
+      } catch (error) {
+        // إذا فشل تحليل JSON، استخدم النص كما هو
+        productsText = `1. ${order.value.product_description || 'منتج غير محدد'}`
       }
       
       // استخراج الكمية الإجمالية من الملاحظات
-      let totalQuantity = ''
+      let totalQuantityText = ''
       if (order.value.notes && order.value.notes.includes('الكمية الإجمالية:')) {
         const match = order.value.notes.match(/الكمية الإجمالية:\s*(\d+)/)
         if (match && match[1]) {
-          totalQuantity = `\n• الكمية الإجمالية: ${convertToEnglishNumbers(match[1])}`
+          totalQuantityText = `\n\n📊 الكمية الإجمالية: ${convertToEnglishNumbers(match[1])} قطعة`
         }
       }
       
-      // رسالة موحدة لجميع المنصات
-      const message = `🛍️ تفاصيل الطلب
+      // رسالة واضحة ومنظمة
+      const message = `🛍️ *تفاصيل الطلب رقم ${order.value.id}*
 
-📋 رقم الطلب: ${order.value.id}
+👤 *معلومات العميل:*
+الاسم: ${order.value.customer_name}
+الهاتف: ${order.value.customer_phone || 'غير متوفر'}
+العنوان: ${order.value.customer_address || 'غير متوفر'}
 
-👤 بيانات العميل:
-• الاسم: ${order.value.customer_name}
-• الهاتف: ${order.value.customer_phone || 'غير متوفر'}
-• العنوان: ${order.value.customer_address || 'غير متوفر'}
+📦 *المنتجات المطلوبة:*
+${productsText}${totalQuantityText}
 
-📦 المنتجات:
-${productsText}${totalQuantity}
-
-💰 الإجمالي النهائي: ${formatCurrency(order.value.total)}
+💰 *تفاصيل الفاتورة:*
+المجموع الفرعي: ${formatCurrency(order.value.subtotal)}
+الضريبة (${convertToEnglishNumbers((order.value.tax_rate || 15).toString())}%): ${formatCurrency(order.value.tax_amount)}
+الإجمالي النهائي: ${formatCurrency(order.value.total)}
 
 ---
 تم إنشاء هذا الطلب من نظام إدارة الطلبات`
       
       const encodedMessage = encodeURIComponent(message)
       
-      // استخدام نفس الرابط لجميع المنصات لضمان التوحيد
+      // استخدام نفس الرابط لجميع المنصات
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`
       
-      // فتح الرابط بنفس الطريقة لجميع المنصات
+      // فتح الرابط
       window.open(whatsappUrl, '_blank')
     }
     
