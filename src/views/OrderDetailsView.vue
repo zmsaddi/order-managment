@@ -216,7 +216,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass, parseEnglishNumber, convertToEnglishNumbers } from '@/utils/formatters'
+import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass, convertToEnglishNumbers, shareOrderOnWhatsApp } from '@/utils/formatters'
 
 export default {
   name: 'OrderDetailsView',
@@ -370,65 +370,9 @@ export default {
       }
     }
     
-    // مشاركة الطلب عبر واتساب - تنسيق محسن وواضح
+    // مشاركة الطلب عبر واتساب - استخدام الدالة الموحدة
     const shareOnWhatsApp = () => {
-      if (!order.value) return
-      
-      // استخراج معلومات المنتجات من product_description (JSON)
-      let productsText = ''
-      try {
-        if (order.value.product_description) {
-          // محاولة تحليل JSON
-          const products = JSON.parse(order.value.product_description)
-          if (Array.isArray(products) && products.length > 0) {
-            productsText = products.map((product, index) => 
-              `${index + 1}. ${product.name} - الكمية: ${convertToEnglishNumbers(product.quantity.toString())} - السعر: €${convertToEnglishNumbers(product.price.toString())}`
-            ).join('\n')
-          } else {
-            // إذا لم يكن JSON، استخدم النص كما هو
-            productsText = `1. ${order.value.product_description}`
-          }
-        }
-      } catch (error) {
-        // إذا فشل تحليل JSON، استخدم النص كما هو
-        productsText = `1. ${order.value.product_description || 'منتج غير محدد'}`
-      }
-      
-      // استخراج الكمية الإجمالية من الملاحظات
-      let totalQuantityText = ''
-      if (order.value.notes && order.value.notes.includes('الكمية الإجمالية:')) {
-        const match = order.value.notes.match(/الكمية الإجمالية:\s*(\d+)/)
-        if (match && match[1]) {
-          totalQuantityText = `\n\n📊 الكمية الإجمالية: ${convertToEnglishNumbers(match[1])} قطعة`
-        }
-      }
-      
-      // رسالة واضحة ومنظمة
-      const message = `🛍️ *تفاصيل الطلب رقم ${order.value.id}*
-
-👤 *معلومات العميل:*
-الاسم: ${order.value.customer_name}
-الهاتف: ${order.value.customer_phone || 'غير متوفر'}
-العنوان: ${order.value.customer_address || 'غير متوفر'}
-
-📦 *المنتجات المطلوبة:*
-${productsText}${totalQuantityText}
-
-💰 *تفاصيل الفاتورة:*
-المجموع الفرعي: ${formatCurrency(order.value.subtotal)}
-الضريبة (${convertToEnglishNumbers((order.value.tax_rate || 15).toString())}%): ${formatCurrency(order.value.tax_amount)}
-الإجمالي النهائي: ${formatCurrency(order.value.total)}
-
----
-تم إنشاء هذا الطلب من نظام إدارة الطلبات`
-      
-      const encodedMessage = encodeURIComponent(message)
-      
-      // استخدام نفس الرابط لجميع المنصات
-      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`
-      
-      // فتح الرابط
-      window.open(whatsappUrl, '_blank')
+      shareOrderOnWhatsApp(order.value)
     }
     
     // إنشاء فاتورة

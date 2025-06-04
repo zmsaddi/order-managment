@@ -168,3 +168,72 @@ export const getUserStatusClass = (status) => {
   
   return classMap[status] || 'bg-gray-100 text-gray-800';
 };
+
+/**
+ * دالة مشاركة واتساب موحدة لجميع أنحاء الموقع
+ * @param {Object} order - بيانات الطلب
+ * @returns {void} - يفتح رابط واتساب
+ */
+export const shareOrderOnWhatsApp = (order) => {
+  if (!order) return;
+  
+  // استخراج معلومات المنتجات من product_description (JSON)
+  let productsText = '';
+  try {
+    if (order.product_description) {
+      // محاولة تحليل JSON
+      const products = JSON.parse(order.product_description);
+      if (Array.isArray(products) && products.length > 0) {
+        productsText = products.map((product, index) => 
+          `${index + 1}. ${product.name}\nالكمية: ${convertToEnglishNumbers(product.quantity.toString())}\nالسعر: €${convertToEnglishNumbers(product.price.toString())}`
+        ).join('\n\n');
+      } else {
+        // إذا لم يكن JSON، استخدم النص كما هو
+        productsText = `1. ${order.product_description}`;
+      }
+    }
+  } catch (error) {
+    // إذا فشل تحليل JSON، استخدم النص كما هو
+    productsText = `1. ${order.product_description || 'منتج غير محدد'}`;
+  }
+  
+  // استخراج الكمية الإجمالية من الملاحظات
+  let totalQuantityText = '';
+  if (order.notes && order.notes.includes('الكمية الإجمالية:')) {
+    const match = order.notes.match(/الكمية الإجمالية:\s*(\d+)/);
+    if (match && match[1]) {
+      totalQuantityText = `\nالكمية الإجمالية: ${convertToEnglishNumbers(match[1])} قطعة`;
+    }
+  }
+  
+  // رسالة واضحة مع كل معلومة في سطر منفصل - موحدة لجميع المنصات
+  const message = `🛍️ تفاصيل الطلب رقم ${order.id}
+
+👤 معلومات العميل:
+الاسم: ${order.customer_name}
+الهاتف: ${order.customer_phone || 'غير متوفر'}
+العنوان: ${order.customer_address || 'غير متوفر'}
+
+📦 المنتجات المطلوبة:
+${productsText}${totalQuantityText}
+
+💰 تفاصيل الفاتورة:
+المجموع الفرعي: ${formatCurrency(order.subtotal)}
+الضريبة: ${convertToEnglishNumbers((order.tax_rate || 15).toString())}%
+مبلغ الضريبة: ${formatCurrency(order.tax_amount)}
+الإجمالي النهائي: ${formatCurrency(order.total)}
+
+${order.status ? `📋 حالة الطلب: ${getOrderStatusText(order.status)}` : ''}
+
+---
+تم إنشاء هذا الطلب من نظام إدارة الطلبات`;
+  
+  const encodedMessage = encodeURIComponent(message);
+  
+  // استخدام نفس الرابط لجميع المنصات (موبايل وكمبيوتر)
+  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+  
+  // فتح الرابط - يعمل على جميع المنصات
+  window.open(whatsappUrl, '_blank');
+};
+
