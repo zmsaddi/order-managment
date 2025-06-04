@@ -40,9 +40,9 @@
                   v-model="order.customer_phone" 
                   class="form-input"
                   required
-                  placeholder="مثال: 0501234567"
-                  pattern="[0-9+\-\s()]{8,15}"
-                  title="يرجى إدخال رقم هاتف صحيح (8-15 رقم)"
+                  placeholder="مثال: +966501234567 أو 0501234567"
+                  pattern="[\+]?[0-9\-\s()]{8,20}"
+                  title="يرجى إدخال رقم هاتف صحيح (يمكن أن يبدأ بـ + للأرقام الدولية)"
                 />
               </div>
               
@@ -89,10 +89,11 @@
                     class="form-input"
                     min="1"
                     max="9999"
+                    step="1"
                     required
                     placeholder="1"
                     @input="calculateItemTotal(index)"
-                    @blur="item.quantity = parseEnglishNumber(item.quantity)"
+                    @blur="item.quantity = Math.round(parseEnglishNumber(item.quantity)) || 1; calculateItemTotal(index)"
                   />
                 </div>
                 
@@ -109,7 +110,7 @@
                     required
                     placeholder="0.00"
                     @input="calculateItemTotal(index)"
-                    @blur="item.price = parseEnglishNumber(item.price)"
+                    @blur="item.price = parseEnglishNumber(item.price); calculateItemTotal(index)"
                   />
                 </div>
                 
@@ -171,7 +172,7 @@
                   max="100"
                   step="0.1"
                   @input="calculateOrderTotal"
-                  @blur="order.taxRate = parseEnglishNumber(order.taxRate)"
+                  @blur="order.taxRate = parseEnglishNumber(order.taxRate); calculateOrderTotal()"
                 />
               </div>
               
@@ -267,23 +268,44 @@ export default {
     // حساب إجمالي المنتج
     const calculateItemTotal = (index) => {
       const item = order.value.items[index]
-      // تحويل الأرقام إلى إنجليزية قبل الحساب
-      const quantity = parseEnglishNumber(item.quantity)
-      const price = parseEnglishNumber(item.price)
-      item.quantity = quantity
-      item.price = price
-      item.total = quantity * price
-      calculateOrderTotal()
+      if (item) {
+        // ضمان أن الكمية رقم صحيح
+        const quantity = Math.round(parseEnglishNumber(item.quantity)) || 1
+        const price = parseEnglishNumber(item.price) || 0
+        
+        // تحديث الكمية في النموذج لتكون رقماً صحيحاً
+        item.quantity = quantity
+        
+        // تقريب إجمالي المنتج إلى منزلتين عشريتين
+        item.total = Math.round((quantity * price) * 100) / 100
+        
+        // إعادة حساب إجمالي الطلب فوراً
+        calculateOrderTotal()
+      }
     }
     
-    // حساب إجمالي الطلب
+    // حساب إجمالي الطلب مع التقريب إلى منزلتين عشريتين
     const calculateOrderTotal = () => {
-      const subtotal = order.value.items.reduce((sum, item) => sum + (parseEnglishNumber(item.total) || 0), 0)
-      const taxRate = parseEnglishNumber(order.value.taxRate) / 100 // تحويل النسبة المئوية إلى عدد عشري
-      const tax = subtotal * taxRate
-      const total = subtotal + tax
+      // حساب المجموع الفرعي
+      const subtotal = order.value.items.reduce((sum, item) => {
+        const itemTotal = parseEnglishNumber(item.total) || 0
+        return sum + itemTotal
+      }, 0)
       
-      order.value.subtotal = subtotal
+      // تقريب المجموع الفرعي إلى منزلتين عشريتين
+      const roundedSubtotal = Math.round(subtotal * 100) / 100
+      
+      // حساب نسبة الضريبة (تحويل من نسبة مئوية إلى عدد عشري)
+      const taxRate = parseEnglishNumber(order.value.taxRate) / 100
+      
+      // حساب قيمة الضريبة وتقريبها إلى منزلتين عشريتين
+      const tax = Math.round((roundedSubtotal * taxRate) * 100) / 100
+      
+      // حساب الإجمالي النهائي وتقريبه إلى منزلتين عشريتين
+      const total = Math.round((roundedSubtotal + tax) * 100) / 100
+      
+      // تحديث القيم في النموذج
+      order.value.subtotal = roundedSubtotal
       order.value.tax = tax
       order.value.total = total
     }
@@ -371,7 +393,6 @@ export default {
           customer_phone: order.value.customer_phone.trim(),
           customer_address: order.value.customer_address.trim(),
           product_description: order.value.items[0]?.name?.trim() || '',
-          unit_price: Number(order.value.items[0]?.price || 0),
           subtotal: Number(order.value.subtotal),
           tax_rate: Number(order.value.taxRate),
           tax_amount: Number(order.value.tax),
