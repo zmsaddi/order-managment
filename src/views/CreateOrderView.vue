@@ -362,12 +362,10 @@ export default {
           customer_name: order.value.customer_name.trim(),
           customer_phone: order.value.customer_phone.trim(),
           customer_address: order.value.customer_address.trim(),
-          items: order.value.items.map(item => ({
-            name: item.name.trim(),
-            quantity: Number(item.quantity),
-            price: Number(item.price),
-            total: Number(item.total)
-          })),
+          // حفظ بيانات المنتج الأول فقط في الحقول الأساسية للتوافق مع النظام القديم
+          product_description: order.value.items[0]?.name?.trim() || '',
+          quantity: Number(order.value.items[0]?.quantity || 1),
+          unit_price: Number(order.value.items[0]?.price || 0),
           subtotal: Number(order.value.subtotal),
           tax_rate: Number(order.value.taxRate), // نسبة الضريبة القابلة للتعديل
           tax_amount: Number(order.value.tax),
