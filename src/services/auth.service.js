@@ -19,6 +19,14 @@ const updateLocalStorageUser = (userData) => {
   }
 }
 
+// دالة مساعدة لمسح بيانات الجلسة من localStorage
+const clearSessionData = () => {
+  localStorage.removeItem('user')
+  // مسح توكن Supabase من localStorage
+  const projectId = supabaseUrl.split('.')[0].split('//')[1]
+  localStorage.removeItem('sb-' + projectId + '-auth-token')
+}
+
 // إنشاء خدمة المصادقة
 export const authService = {
   // تسجيل الدخول
@@ -91,10 +99,24 @@ export const authService = {
 
   // تسجيل الخروج
   async logout() {
-    const { error } = await supabase.auth.signOut()
-    // حذف بيانات المستخدم من localStorage
-    localStorage.removeItem('user')
-    if (error) throw error
+    try {
+      // تسجيل الخروج من Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      // مسح بيانات الجلسة من localStorage
+      clearSessionData()
+      
+      if (error) throw error
+      
+      return { success: true }
+    } catch (error) {
+      console.error('خطأ في تسجيل الخروج:', error)
+      
+      // في حالة حدوث خطأ، حاول مسح localStorage على أي حال
+      clearSessionData()
+      
+      throw error
+    }
   },
 
   // إنشاء مستخدم جديد
@@ -376,5 +398,8 @@ export const authService = {
   },
 
   // تحديث بيانات المستخدم في localStorage
-  refreshLocalStorageUser: updateLocalStorageUser
+  refreshLocalStorageUser: updateLocalStorageUser,
+  
+  // مسح بيانات الجلسة من localStorage
+  clearSessionData
 }

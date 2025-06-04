@@ -62,8 +62,9 @@
         </div>
         <div class="py-1 border-t border-gray-100">
           <!-- تسجيل الخروج -->
-          <button 
-            @click="logoutAndCloseMenu" 
+          <a 
+            href="#" 
+            @click.prevent="logoutAndCloseMenu" 
             class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-right"
           >
             <span class="ml-2">
@@ -72,7 +73,7 @@
               </svg>
             </span>
             <span>تسجيل الخروج</span>
-          </button>
+          </a>
         </div>
       </div>
     </transition>
@@ -82,7 +83,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { authService } from '@/services/auth.service'
+import { supabase } from '@/services/supabase'
 
 export default {
   name: 'UserProfileMenu',
@@ -112,14 +113,24 @@ export default {
       isOpen.value = false
     }
     
-    // تسجيل الخروج
+    // تسجيل الخروج - تم تعديله للعمل مباشرة مع Supabase
     const logout = async () => {
       try {
-        await authService.logout()
+        // تسجيل الخروج من Supabase
+        await supabase.auth.signOut()
+        
+        // حذف بيانات المستخدم من localStorage
         localStorage.removeItem('user')
+        localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token')
+        
+        // توجيه المستخدم إلى صفحة تسجيل الدخول
         router.push({ name: 'login' })
       } catch (error) {
         console.error('خطأ في تسجيل الخروج:', error)
+        
+        // في حالة حدوث خطأ، حاول مسح localStorage والتوجيه إلى صفحة تسجيل الدخول على أي حال
+        localStorage.clear()
+        router.push({ name: 'login' })
       }
     }
     
@@ -141,13 +152,17 @@ export default {
       }
     }
     
-    // إضافة وإزالة مستمع الحدث للنقر خارج القائمة
+    // إضافة مستمع الحدث للنقر خارج القائمة على الكمبيوتر
     onMounted(() => {
       document.addEventListener('mousedown', handleClickOutside)
+      
+      // إضافة مستمع الحدث للنقر خارج القائمة على الهاتف
+      document.addEventListener('touchend', handleClickOutside)
     })
     
     onUnmounted(() => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchend', handleClickOutside)
     })
     
     return {
