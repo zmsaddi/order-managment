@@ -230,11 +230,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers } from '@/utils/formatters'
 
-// دالة لحساب مجاميع الطلب
+// دالة لحساب مجاميع عنصر واحد
 function calculateItemSubtotal(quantity, price) {
   return Math.round((quantity * price) * 100) / 100
 }
 
+// دالة لحساب إجماليات الطلب
 function calculateOrderTotals(items, taxRate) {
   let orderSubtotal = 0
   items.forEach(it => {
@@ -265,7 +266,7 @@ export default {
       product_description: '',
       items: [
         {
-          id: null,            // سنملؤه لاحقاً من order_products إذا وُجد
+          id: null,
           name: '',
           description: '',
           notes: '',
@@ -358,7 +359,7 @@ export default {
       calculateOrderTotal()
     }
 
-    // دالة لحساب مجاميع الطلب الكاملة
+    // دالة لحساب مجاميع الطلب
     const calculateOrderTotal = () => {
       const { subtotal, taxAmount, total } = calculateOrderTotals(
         order.value.items,
