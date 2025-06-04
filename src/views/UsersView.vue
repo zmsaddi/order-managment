@@ -535,6 +535,22 @@ export default {
         const index = users.value.findIndex(u => u.id === user.id)
         if (index !== -1) {
           users.value[index].status = newStatus
+          // مزامنة حالة المستخدم مع Auth عبر السرفرلس فانكشن
+          try {
+            const response = await fetch('/api/toggleUserAuth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.id, disable: newStatus === 'inactive' })
+            });
+            if (!response.ok) {
+              const errBody = await response.json();
+              console.error('خطأ في مزامنة Auth:', errBody.error);
+              alert('خطأ أثناء مزامنة حالة المستخدم مع Auth');
+            }
+          } catch (e) {
+            console.error('خطأ في استدعاء نقطة النهاية:', e);
+            alert('خطأ أثناء الاتصال بالسرفرليس فانكشن');
+          }
         }
         
         // إظهار رسالة نجاح
