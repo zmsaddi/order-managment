@@ -1,14 +1,11 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { supabase } from '@/services/supabase'
 
-// استيراد الصفحات
+// استيراد التخطيط والصفحات
+import MainLayout from '@/layouts/MainLayout.vue'
 import LoginView from '@/views/LoginView.vue'
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/login'
-  },
   {
     path: '/login',
     name: 'login',
@@ -22,52 +19,63 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: () => import('@/views/DashboardView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/users',
-    name: 'users',
-    component: () => import('@/views/UsersView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/orders',
-    name: 'orders',
-    component: () => import('@/views/OrdersView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/orders/create',
-    name: 'create-order',
-    component: () => import('@/views/CreateOrderView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/orders/:id',
-    name: 'order-details',
-    component: () => import('@/views/OrderDetailsView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/orders/edit/:id',
-    name: 'edit-order',
-    component: () => import('@/views/EditOrderView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/reports',
-    name: 'reports',
-    component: () => import('@/views/ReportsView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/profile',
-    name: 'profile',
-    component: () => import('@/views/ProfileView.vue'),
-    meta: { requiresAuth: true }
+    path: '/',
+    component: MainLayout,
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        redirect: '/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'dashboard',
+        component: () => import('@/views/DashboardView.vue'),
+        meta: { title: 'لوحة التحكم' }
+      },
+      {
+        path: 'users',
+        name: 'users',
+        component: () => import('@/views/UsersView.vue'),
+        meta: { title: 'إدارة المستخدمين', requiresAdmin: true }
+      },
+      {
+        path: 'orders',
+        name: 'orders',
+        component: () => import('@/views/OrdersView.vue'),
+        meta: { title: 'الطلبات' }
+      },
+      {
+        path: 'orders/create',
+        name: 'create-order',
+        component: () => import('@/views/CreateOrderView.vue'),
+        meta: { title: 'إنشاء طلب جديد' }
+      },
+      {
+        path: 'orders/:id',
+        name: 'order-details',
+        component: () => import('@/views/OrderDetailsView.vue'),
+        meta: { title: 'تفاصيل الطلب' }
+      },
+      {
+        path: 'orders/edit/:id',
+        name: 'edit-order',
+        component: () => import('@/views/EditOrderView.vue'),
+        meta: { title: 'تعديل الطلب' }
+      },
+      {
+        path: 'reports',
+        name: 'reports',
+        component: () => import('@/views/ReportsView.vue'),
+        meta: { title: 'التقارير' }
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('@/views/ProfileView.vue'),
+        meta: { title: 'الملف الشخصي' }
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',
