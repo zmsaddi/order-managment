@@ -133,8 +133,11 @@ export const generateInvoice = (order, products, salesRep) => {
   doc.text(`المجموع الفرعي: ${formatCurrency(order.subtotal)}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });
   currentY += 7;
   
-  doc.text(`قيمة الضريبة (${order.tax_rate}%): ${formatCurrency(order.tax_amount)}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });
-  currentY += 7;
+  // إظهار الضريبة فقط إذا كانت أكبر من صفر
+  if (order.tax_rate > 0 && order.tax_amount > 0) {
+    doc.text(`قيمة الضريبة (${order.tax_rate}%): ${formatCurrency(order.tax_amount)}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });
+    currentY += 7;
+  }
   
   doc.setFontSize(14);
   doc.text(`الإجمالي: ${formatCurrency(order.total)}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });

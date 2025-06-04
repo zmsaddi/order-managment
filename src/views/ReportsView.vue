@@ -63,8 +63,7 @@
           </select>
         </div>
       </div>
-      
-      <!-- أزرار الإجراءات -->
+            <!-- أزرار الإجراءات -->
       <div class="flex justify-center space-x-4 space-x-reverse mb-6">
         <button
           @click="generateReport"
@@ -72,7 +71,7 @@
           :disabled="loading"
         >
           <span v-if="loading">جاري التحميل...</span>
-          <span v-else>إنشاء التقرير</span>
+          <span v-else">إنشاء التقرير</span>
         </button>
         
         <button
@@ -80,15 +79,7 @@
           class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           :disabled="!reportData.length"
         >
-          تصدير PDF (محسن)
-        </button>
-        
-        <button
-          @click="exportElementToPDF"
-          class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          :disabled="!reportData.length"
-        >
-          تصدير PDF (من الصفحة)
+          تصدير PDF
         </button>
         
         <button
@@ -246,7 +237,7 @@ export default {
         
         // تطبيق فلتر المستخدم
         if (filters.value.userId) {
-          query = query.eq('created_by', filters.value.userId)
+          query = query.eq('sales_rep_id', filters.value.userId)
         }
         
         const { data, error } = await query
@@ -291,37 +282,7 @@ export default {
       }
     }
     
-    // تصدير إلى PDF من العنصر (طريقة بديلة)
-    const exportElementToPDF = async () => {
-      try {
-        if (!reportData.value.length) {
-          alert('لا توجد بيانات لتصديرها')
-          return
-        }
-        
-        // استيراد دالة توليد PDF من العنصر
-        const { createPdfFromElement } = await import('@/utils/invoiceGenerator')
-        
-        // انتظار تحديث DOM
-        await nextTick()
-        
-        // توليد اسم الملف
-        const dateFrom = filters.value.dateFrom || 'all'
-        const dateTo = filters.value.dateTo || 'all'
-        const filename = `sales-report-element-${dateFrom}-to-${dateTo}.pdf`
-        
-        // توليد PDF من العنصر
-        await createPdfFromElement('report-content', {
-          filename: filename,
-          orientation: 'landscape'
-        })
-        
-        console.log('تم تصدير التقرير إلى PDF بنجاح')
-      } catch (error) {
-        console.error('خطأ في تصدير PDF:', error)
-        alert('حدث خطأ أثناء تصدير التقرير إلى PDF: ' + error.message)
-      }
-    }
+    // تصدير إلى PDF من العنصر (طريقة بديلة) - تم إزالتها حسب الطلب
     
     // إعادة تعيين الفلاتر
     const resetFilters = () => {
@@ -355,7 +316,6 @@ export default {
       reportSummary,
       generateReport,
       exportToPDF,
-      exportElementToPDF,
       resetFilters,
       formatCurrency,
       formatDate,

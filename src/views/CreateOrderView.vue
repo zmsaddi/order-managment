@@ -86,14 +86,17 @@
                     type="number" 
                     :id="`item-quantity-${index}`" 
                     v-model.number="item.quantity" 
-                    class="form-input"
+                    class="form-input text-center text-lg md:text-sm"
                     min="1"
                     max="9999"
                     step="1"
                     required
                     placeholder="1"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
                     @input="calculateItemTotal(index)"
                     @blur="item.quantity = Math.round(parseEnglishNumber(item.quantity)) || 1; calculateItemTotal(index)"
+                    @focus="$event.target.select()"
                   />
                 </div>
                 
