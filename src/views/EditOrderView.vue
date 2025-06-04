@@ -440,7 +440,7 @@ export default {
           customer_address: data.customer_address || '',
           items: items,
           subtotal: data.subtotal || 0,
-          taxRate: data.tax_rate || 15,
+          taxRate: data.tax_rate || 0,
           tax: data.tax_amount || 0,
           total: data.total || 0,
           notes: data.notes || '',

@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate, getOrderStatusText } from './formatters';
 
 /**
@@ -235,7 +235,7 @@ export const createPdfFromElement = async (elementId, options = {}) => {
 export const generateReportPDF = async (reportData, summary, filters) => {
   try {
     const { jsPDF } = await import('jspdf');
-    await import('jspdf-autotable');
+    const autoTable = (await import('jspdf-autotable')).default;
     
     // إنشاء مستند PDF
     const doc = new jsPDF({

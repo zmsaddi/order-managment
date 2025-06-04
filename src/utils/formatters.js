@@ -234,7 +234,7 @@ ${productsText}
 
 💰 تفاصيل الفاتورة:
 المجموع الفرعي: ${formatCurrency(order.subtotal)}${order.tax_rate > 0 && order.tax_amount > 0 ? `
-الضريبة: ${convertToEnglishNumbers((order.tax_rate || 15).toString())}%
+الضريبة: ${convertToEnglishNumbers((order.tax_rate || 0).toString())}%
 مبلغ الضريبة: ${formatCurrency(order.tax_amount)}` : ''}
 الإجمالي النهائي: ${formatCurrency(order.total)}
 

@@ -271,7 +271,7 @@ export default {
         }
       ],
       subtotal: 0,
-      taxRate: 15, // نسبة الضريبة القابلة للتعديل
+      taxRate: 0, // نسبة الضريبة القابلة للتعديل
       tax: 0,
       total: 0,
       notes: '',
