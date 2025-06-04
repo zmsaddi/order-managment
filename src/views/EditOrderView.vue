@@ -488,27 +488,31 @@ export default {
         }
         
         // إعداد بيانات الطلب للتحديث - استخدام الحقول الموجودة فقط في قاعدة البيانات
-        // حساب الكمية الإجمالية وسعر الوحدة المتوسط
+        // حساب الكمية الإجمالية وسعر الوحدة المتوسط للعرض فقط
         const totalQuantity = order.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
         const averageUnitPrice = totalQuantity > 0 ? (order.value.subtotal / totalQuantity) : 0
         
-        // تجميع أسماء المنتجات
+        // تجميع أسماء المنتجات مع الكميات والأسعار
         const productDescriptions = order.value.items.map(item => 
-          `${item.name} (الكمية: ${item.quantity})`
+          `${item.name} (الكمية: ${item.quantity}, السعر: €${item.price})`
         ).join(', ')
+        
+        // إضافة معلومات إضافية في الملاحظات
+        const additionalInfo = `الكمية الإجمالية: ${totalQuantity}, سعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
+        const finalNotes = order.value.notes ? 
+          `${order.value.notes.trim()}\n\n${additionalInfo}` : 
+          additionalInfo
         
         const orderData = {
           customer_name: order.value.customer_name.trim(),
           customer_phone: order.value.customer_phone.trim(),
           customer_address: order.value.customer_address.trim(),
           product_description: productDescriptions,
-          quantity: totalQuantity,
-          unit_price: Math.round(averageUnitPrice * 100) / 100,
           subtotal: Number(order.value.subtotal),
           tax_rate: Number(order.value.taxRate),
           tax_amount: Number(order.value.tax),
           total: Number(order.value.total),
-          notes: order.value.notes ? order.value.notes.trim() : ''
+          notes: finalNotes
         }
         
         // تحديث الطلب في قاعدة البيانات

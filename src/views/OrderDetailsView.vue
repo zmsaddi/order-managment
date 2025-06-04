@@ -272,17 +272,28 @@ export default {
     const calculateUnitPrice = (orderData) => {
       if (!orderData) return 0
       
-      // إذا كان unit_price موجود ومحفوظ، استخدمه
-      if (orderData.unit_price && orderData.unit_price > 0) {
-        return parseEnglishNumber(orderData.unit_price)
+      // محاولة استخراج سعر الوحدة من الملاحظات
+      if (orderData.notes && orderData.notes.includes('سعر الوحدة المتوسط:')) {
+        const match = orderData.notes.match(/سعر الوحدة المتوسط:\s*€([\d.]+)/)
+        if (match && match[1]) {
+          return parseFloat(match[1])
+        }
       }
       
-      // إذا لم يكن موجود، احسبه من المجموع الفرعي والكمية
-      const subtotal = parseEnglishNumber(orderData.subtotal) || 0
-      const quantity = parseEnglishNumber(orderData.quantity) || 1
+      // محاولة استخراج الكمية الإجمالية من الملاحظات
+      let totalQuantity = 1
+      if (orderData.notes && orderData.notes.includes('الكمية الإجمالية:')) {
+        const match = orderData.notes.match(/الكمية الإجمالية:\s*(\d+)/)
+        if (match && match[1]) {
+          totalQuantity = parseInt(match[1])
+        }
+      }
       
-      if (subtotal > 0 && quantity > 0) {
-        return Math.round((subtotal / quantity) * 100) / 100
+      // إذا لم نجد المعلومات في الملاحظات، احسب من المجموع الفرعي والكمية
+      const subtotal = parseEnglishNumber(orderData.subtotal) || 0
+      
+      if (subtotal > 0 && totalQuantity > 0) {
+        return Math.round((subtotal / totalQuantity) * 100) / 100
       }
       
       return 0
@@ -363,7 +374,7 @@ export default {
     const shareOnWhatsApp = () => {
       if (!order.value) return
       
-      // تحليل وصف المنتجات لاستخراج المنتجات المتعددة
+      // استخراج معلومات المنتجات من وصف المنتج
       let productsText = ''
       if (order.value.product_description) {
         // إذا كان الوصف يحتوي على منتجات متعددة (مفصولة بفاصلة)
@@ -373,33 +384,74 @@ export default {
         } else {
           // منتج واحد
           productsText = `1. ${order.value.product_description}`
-          if (order.value.quantity && order.value.quantity > 1) {
-            productsText += ` (الكمية: ${convertToEnglishNumbers(order.value.quantity.toString())})`
-          }
         }
       }
       
-      const message = `
-🛍️ *تفاصيل الطلب*
+      // استخراج الكمية الإجمالية من الملاحظات
+      let totalQuantity = ''
+      if (order.value.notes && order.value.notes.includes('الكمية الإجمالية:')) {
+        const match = order.value.notes.match(/الكمية الإجمالية:\s*(\d+)/)
+        if (match && match[1]) {
+          totalQuantity = `\n• الكمية الإجمالية: ${convertToEnglishNumbers(match[1])}`
+        }
+      }
+      
+      const message = `🛍️ تفاصيل الطلب
 
-📋 *رقم الطلب:* ${order.value.id}
+📋 رقم الطلب: ${order.value.id}
 
-👤 *بيانات العميل:*
+👤 بيانات العميل:
 • الاسم: ${order.value.customer_name}
 • الهاتف: ${order.value.customer_phone || 'غير متوفر'}
 • العنوان: ${order.value.customer_address || 'غير متوفر'}
 
-📦 *المنتجات:*
-${productsText}
+📦 المنتجات:
+${productsText}${totalQuantity}
 
-💰 *الإجمالي النهائي:* ${formatCurrency(order.value.total)}
+💰 الإجمالي النهائي: ${formatCurrency(order.value.total)}
 
 ---
-تم إنشاء هذا الطلب من نظام إدارة الطلبات
-      `.trim()
+تم إنشاء هذا الطلب من نظام إدارة الطلبات`
       
       const encodedMessage = encodeURIComponent(message)
-      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
+      
+      // التحقق من نوع الجهاز والبيئة
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      const isAndroid = /Android/i.test(navigator.userAgent)
+      const isInApp = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches
+      
+      // للتطبيقات الأندرويد: استخدام Web Share API إذا كان متاحاً
+      if (isAndroid && isInApp && navigator.share) {
+        navigator.share({
+          title: 'تفاصيل الطلب',
+          text: message,
+        }).catch((error) => {
+          console.log('Error sharing:', error)
+          // في حالة فشل Web Share API، استخدم الطريقة التقليدية
+          fallbackShare(encodedMessage, isMobile)
+        })
+      } else {
+        fallbackShare(encodedMessage, isMobile)
+      }
+    }
+    
+    // دالة مساعدة للمشاركة التقليدية
+    const fallbackShare = (encodedMessage, isMobile) => {
+      if (isMobile) {
+        // للموبايل: استخدام رابط واتساب المباشر
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`
+        
+        // محاولة فتح الرابط في نفس النافذة للتطبيقات
+        try {
+          window.location.href = whatsappUrl
+        } catch (error) {
+          // في حالة الفشل، فتح في نافذة جديدة
+          window.open(whatsappUrl, '_blank')
+        }
+      } else {
+        // للكمبيوتر: فتح في نافذة جديدة
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
+      }
     }
     
     // إنشاء فاتورة
@@ -499,6 +551,7 @@ ${productsText}
       getStatusClass,
       updateOrderStatus,
       shareOnWhatsApp,
+      fallbackShare,
       generateInvoice,
       showDeleteModal,
       confirmDeleteOrder,
