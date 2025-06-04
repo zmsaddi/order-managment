@@ -154,8 +154,23 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <!-- عرض بيانات المنتج من الحقول الأساسية -->
-                    <tr class="hover:bg-gray-50">
+                    <!-- عرض المنتجات من الجدول المنفصل -->
+                    <tr v-if="order.products && order.products.length > 0" v-for="(product, index) in order.products" :key="product.id" class="hover:bg-gray-50">
+                      <td class="border border-gray-300 px-4 py-2">
+                        <div class="font-medium">{{ product.name || 'اسم المنتج غير متوفر' }}</div>
+                        <div v-if="product.description" class="text-sm text-gray-600 mt-1">{{ product.description }}</div>
+                        <div v-if="product.notes" class="text-sm text-yellow-600 mt-1 italic">{{ product.notes }}</div>
+                      </td>
+                      <td class="border border-gray-300 px-4 py-2 text-center font-medium">{{ convertToEnglishNumbers((product.quantity || 1).toString()) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center font-medium text-blue-600">{{ formatCurrency(product.unit_price || 0) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency(product.subtotal || 0) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ convertToEnglishNumbers((order.tax_rate || 15).toString()) }}%</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">{{ formatCurrency((product.subtotal || 0) * (order.tax_rate || 15) / 100) }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center font-semibold text-green-600">{{ formatCurrency((product.subtotal || 0) * (1 + (order.tax_rate || 15) / 100)) }}</td>
+                    </tr>
+                    
+                    <!-- عرض بيانات المنتج من الحقول الأساسية (للطلبات القديمة) -->
+                    <tr v-else class="hover:bg-gray-50">
                       <td class="border border-gray-300 px-4 py-2">
                         <div class="font-medium">{{ order.product_description || 'وصف المنتج غير متوفر' }}</div>
                       </td>
@@ -182,12 +197,12 @@
               </div>
               
               <!-- ملاحظات المنتجات -->
-              <div v-if="order.items && order.items.some(item => item.notes)" class="mt-4">
+              <div v-if="order.products && order.products.some(product => product.notes)" class="mt-4">
                 <h3 class="text-md font-semibold text-gray-700 mb-2">ملاحظات المنتجات:</h3>
-                <div v-for="(item, index) in order.items" :key="index" class="mb-2">
-                  <div v-if="item.notes" class="p-2 bg-yellow-50 rounded-md border-l-4 border-yellow-400">
-                    <span class="font-medium">{{ item.name || item.description }}:</span>
-                    <span class="text-gray-700">{{ item.notes }}</span>
+                <div v-for="(product, index) in order.products" :key="product.id" class="mb-2">
+                  <div v-if="product.notes" class="p-2 bg-yellow-50 rounded-md border-l-4 border-yellow-400">
+                    <span class="font-medium">{{ product.name || product.description }}:</span>
+                    <span class="text-gray-700">{{ product.notes }}</span>
                   </div>
                 </div>
               </div>
@@ -345,6 +360,20 @@ export default {
         
         order.value = data
         newStatus.value = data.status
+        
+        // جلب منتجات الطلب من الجدول المنفصل
+        const { data: productsData, error: productsError } = await supabase
+          .from('order_products')
+          .select('*')
+          .eq('order_id', orderId)
+        
+        if (!productsError && productsData && productsData.length > 0) {
+          // إضافة المنتجات إلى بيانات الطلب
+          order.value.products = productsData
+        } else {
+          // في حالة عدم وجود منتجات في الجدول المنفصل، استخدم البيانات القديمة
+          order.value.products = []
+        }
         
         // جلب بيانات المندوب
         if (data.sales_rep_id) {

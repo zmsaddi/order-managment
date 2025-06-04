@@ -1,795 +1,334 @@
-Below is a breakdown of each requested change, along with concrete pointers to the files you’ll need to update and example code snippets. I’ve tried to tackle them in the order you described:
+-- إعداد قاعدة بيانات نظام إدارة الطلبات
 
-1. “In reports I have generate PDF but it did not work.”
-Where to look:
+-- إنشاء الامتدادات اللازمة
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-src/utils/invoiceGenerator.js (most likely contains the logic that turns HTML data into a PDF).
+-- إنشاء جدول المستخدمين
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  phone TEXT,
+  address TEXT,
+  role TEXT NOT NULL DEFAULT 'representative', -- 'admin', 'sales_manager', 'representative'
+  employee_id TEXT,
+  status TEXT NOT NULL DEFAULT 'active', -- 'active', 'inactive'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-src/views/ReportsView.vue (the UI that calls the PDF generator).
+-- إنشاء جدول الطلبات
+CREATE TABLE IF NOT EXISTS public.orders (
+  id SERIAL PRIMARY KEY,
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT,
+  customer_address TEXT,
+  product_description TEXT NOT NULL,
+  subtotal NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  tax_rate NUMERIC(5, 2) NOT NULL DEFAULT 0,
+  tax_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  total NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'new', -- 'new', 'completed_pending_delivery', 'delivered', 'cancelled'
+  sales_rep_id UUID REFERENCES public.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-1.1 Diagnose “not working” PDF generation
-Open src/utils/invoiceGenerator.js. You’re probably using something like jsPDF or html2pdf.js. Ensure:
+-- إنشاء جدول منتجات الطلبات
+CREATE TABLE IF NOT EXISTS public.order_products (
+  id SERIAL PRIMARY KEY,
+  order_id INTEGER REFERENCES public.orders(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  notes TEXT,
+  quantity NUMERIC(10, 2) NOT NULL DEFAULT 1,
+  unit_price NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  subtotal NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-The library is properly installed (check in package.json for "jspdf" or "html2pdf.js").
+-- تفعيل سياسات الأمان على مستوى الصفوف
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.order_products ENABLE ROW LEVEL SECURITY;
 
-The export function returns a Promise (so that Vue can await it).
+-- حذف السياسات الموجودة إن وجدت
+DROP POLICY IF EXISTS users_select_policy ON public.users;
+DROP POLICY IF EXISTS users_insert_policy ON public.users;
+DROP POLICY IF EXISTS users_update_policy ON public.users;
+DROP POLICY IF EXISTS users_delete_policy ON public.users;
+DROP POLICY IF EXISTS orders_select_policy ON public.orders;
+DROP POLICY IF EXISTS orders_insert_policy ON public.orders;
+DROP POLICY IF EXISTS orders_update_policy ON public.orders;
+DROP POLICY IF EXISTS orders_delete_policy ON public.orders;
+DROP POLICY IF EXISTS order_products_select_policy ON public.order_products;
+DROP POLICY IF EXISTS order_products_insert_policy ON public.order_products;
+DROP POLICY IF EXISTS order_products_update_policy ON public.order_products;
+DROP POLICY IF EXISTS order_products_delete_policy ON public.order_products;
 
-Open src/views/ReportsView.vue. Look for the method that triggers PDF creation, e.g.:
+-- سياسات جدول المستخدمين
+-- سياسة قراءة المستخدمين (للمستخدمين المصادق عليهم)
+CREATE POLICY "users_select_policy" ON public.users
+  FOR SELECT USING (auth.role() = 'authenticated');
 
-js
-نسخ
-تحرير
-methods: {
-  async generateReportPdf() {
-    try {
-      const data = await this.fetchReportData(); // pulls data
-      await invoiceGenerator.createPdf(data, { filename: 'report.pdf' });
-    } catch (err) {
-      console.error('PDF gen failed:', err);
-    }
-  }
-}
-Make sure invoiceGenerator.createPdf (or similar) actually exists in invoiceGenerator.js.
-
-Check the browser console when clicking “Generate PDF” to see any runtime errors (missing import, undefined method, etc.).
-
-1.2 Example fix using jsPDF+html2canvas
-If you don’t already have a working implementation, here’s a minimal approach. In invoiceGenerator.js:
-
-js
-نسخ
-تحرير
-// src/utils/invoiceGenerator.js
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
-export async function createPdfFromElement(elementId, options = {}) {
-  // Find the DOM element by ID
-  const element = document.getElementById(elementId);
-  if (!element) {
-    throw new Error(`Element with ID "${elementId}" not found`);
-  }
-
-  // Render DOM to canvas
-  const canvas = await html2canvas(element, { scale: 2 });
-  const imgData = canvas.toDataURL('image/png');
-
-  // Create jsPDF document
-  const pdf = new jsPDF({
-    orientation: options.orientation || 'portrait',
-    unit: 'px',
-    format: [canvas.width, canvas.height],
-  });
-
-  pdf.addImage(
-    imgData,
-    'PNG',
-    0,
-    0,
-    canvas.width,
-    canvas.height
+-- سياسة إدخال المستخدمين (للمدراء أو المستخدم نفسه عند أول تسجيل دخول)
+CREATE POLICY "users_insert_policy" ON public.users
+  FOR INSERT WITH CHECK (
+    auth.role() = 'authenticated' AND
+    (
+      -- السماح للمستخدم بإدراج نفسه (عند أول تسجيل دخول)
+      id = auth.uid() OR
+      -- أو السماح للمدراء بإدراج مستخدمين جدد
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+      )
+    )
   );
 
-  const filename = options.filename || 'report.pdf';
-  pdf.save(filename);
-}
-Then, in ReportsView.vue, wrap the report HTML in a div with a known ID:
-
-html
-نسخ
-تحرير
-<template>
-  <MainLayout>
-    <div>
-      <!-- Wrap the entire report here: -->
-      <div id="report-content">
-        <!-- ... your report tables/charts/etc. ... -->
-      </div>
-
-      <button @click="generateReportPdf">Download as PDF</button>
-    </div>
-  </MainLayout>
-</template>
-
-<script>
-import { createPdfFromElement } from '@/utils/invoiceGenerator';
-
-export default {
-  name: 'ReportsView',
-  methods: {
-    async generateReportPdf() {
-      try {
-        // Wait a tick to ensure everything is rendered
-        await this.$nextTick();
-        await createPdfFromElement('report-content', {
-          filename: 'sales-report.pdf',
-        });
-      } catch (err) {
-        console.error('PDF generation error:', err);
-        this.$notify({
-          type: 'error',
-          message: 'Failed to generate PDF. Check console for details.',
-        });
-      }
-    },
-  },
-};
-</script>
-Key points:
-
-Make sure the id="report-content" wrapper exists in the DOM.
-
-Confirm html2canvas and jspdf are installed:
-
-bash
-نسخ
-تحرير
-npm install jspdf html2canvas
-Inspect the browser console when you click “Download as PDF”—any red errors can tell you what’s missing.
-
-2. “Also I want to have option of reports by user to see how they do.”
-This means adding a “filter by user” dropdown (or similar) in the Reports page, then querying Supabase (your backend) for each user’s metrics.
-
-2.1 Modify ReportsView.vue to include a user selector
-Fetch all users from your Supabase users table when the component mounts.
-
-Add a <select> (or typeahead) bound to selectedUserId.
-
-Whenever selectedUserId changes, re-run the report query constrained by that user’s ID.
-
-Example changes in ReportsView.vue
-vue
-نسخ
-تحرير
-<template>
-  <MainLayout>
-    <div class="p-4">
-      <h1 class="text-2xl font-bold mb-4">Reports by User</h1>
-
-      <!-- User Filter Dropdown -->
-      <div class="mb-6">
-        <label for="userFilter" class="block text-sm font-medium text-gray-700">
-          Filter by User
-        </label>
-        <select
-          id="userFilter"
-          v-model="selectedUserId"
-          @change="fetchReportData"
-          class="mt-1 block w-1/3 border-gray-300 rounded-md shadow-sm"
-        >
-          <option value="">All Users</option>
-          <option v-for="user in users" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Report Content -->
-      <div id="report-content">
-        <table class="min-w-full bg-white">
-          <thead>
-            <tr>
-              <th class="px-4 py-2">Order ID</th>
-              <th class="px-4 py-2">User</th>
-              <th class="px-4 py-2">Total Amount</th>
-              <th class="px-4 py-2">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in reportRows" :key="row.order_id">
-              <td class="border px-4 py-2">{{ row.order_id }}</td>
-              <td class="border px-4 py-2">{{ row.user_name }}</td>
-              <td class="border px-4 py-2">{{ formatCurrency(row.total_amount) }}</td>
-              <td class="border px-4 py-2">{{ formatDate(row.created_at) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <button @click="generateReportPdf" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
-        Download as PDF
-      </button>
-    </div>
-  </MainLayout>
-</template>
-
-<script>
-import { createPdfFromElement } from '@/utils/invoiceGenerator';
-import supabase from '@/services/supabase';
-import { formatCurrency, formatDate } from '@/utils/formatters';
-
-export default {
-  name: 'ReportsView',
-  data() {
-    return {
-      users: [],
-      selectedUserId: '',
-      reportRows: [],
-    };
-  },
-  filters: {
-    formatCurrency,
-    formatDate,
-  },
-  async mounted() {
-    await this.loadUsers();
-    await this.fetchReportData();
-  },
-  methods: {
-    async loadUsers() {
-      const { data: usersData, error } = await supabase
-        .from('users')
-        .select('id, name')
-        .order('name', { ascending: true });
-      if (error) {
-        console.error('Error loading users:', error);
-        return;
-      }
-      this.users = usersData;
-    },
-
-    async fetchReportData() {
-      let query = supabase
-        .from('orders')
-        .select(`
-          id AS order_id,
-          total_amount,
-          created_at,
-          user: users ( id, name )
-        `);
-
-      if (this.selectedUserId) {
-        query = query.eq('user.id', this.selectedUserId);
-      }
-
-      const { data: rows, error } = await query.order('created_at', {
-        ascending: false,
-      });
-
-      if (error) {
-        console.error('Error fetching report:', error);
-        this.reportRows = [];
-        return;
-      }
-
-      // Map rows to flatten user name
-      this.reportRows = rows.map((r) => ({
-        order_id: r.order_id,
-        user_name: r.user.name,
-        total_amount: r.total_amount,
-        created_at: r.created_at,
-      }));
-    },
-
-    async generateReportPdf() {
-      try {
-        await this.$nextTick();
-        await createPdfFromElement('report-content', {
-          filename: this.selectedUserId
-            ? `report-user-${this.selectedUserId}.pdf`
-            : 'report-all-users.pdf',
-        });
-      } catch (err) {
-        console.error('PDF gen error:', err);
-        this.$notify({
-          type: 'error',
-          message: 'Failed to generate PDF.',
-        });
-      }
-    },
-  },
-};
-</script>
-
-<style scoped>
-/* (any extra styling you want) */
-</style>
-Explanation:
-
-loadUsers(): Fetches all users from Supabase’s users table.
-
-fetchReportData(): Fetches orders joined with users, optionally filtering by selectedUserId.
-
-The dropdown’s @change="fetchReportData" ensures that whenever you pick a user, the table refreshes.
-
-You can still click “Download as PDF” to produce a PDF of just that user’s data.
-
-3. “In orders if I open order details then in product details it did not read the information of quantity price tax; it should show total price and total quantity of the order.”
-This pertains to the OrderDetails page (likely src/views/OrderDetailsView.vue). You need to:
-
-Ensure the data returned from Supabase (or your API) for a single order includes each line item’s quantity, unit_price, and tax_percent (or however you store tax).
-
-In the template, loop over order.items (or whatever the array is called) and compute per-row totals (e.g. quantity * unit_price + tax), then sum across all items to display “Total Quantity” and “Total Price” at the bottom.
-
-3.1 Example changes in OrderDetailsView.vue
-vue
-نسخ
-تحرير
-<template>
-  <MainLayout>
-    <div class="p-4">
-      <h1 class="text-2xl font-bold mb-4">Order Details: {{ order.id }}</h1>
-      <div class="mb-6">
-        <h2 class="text-xl font-semibold">Client</h2>
-        <p>{{ order.client.name }}</p>
-        <p>{{ order.client.phone }}</p>
-        <p>{{ order.client.address }}</p>
-      </div>
-
-      <h2 class="text-xl font-semibold mb-2">Products</h2>
-      <table class="min-w-full bg-white">
-        <thead>
-          <tr>
-            <th class="px-4 py-2">Product</th>
-            <th class="px-4 py-2">Qty</th>
-            <th class="px-4 py-2">Unit Price</th>
-            <th class="px-4 py-2">Tax %</th>
-            <th class="px-4 py-2">Line Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in order.items" :key="item.product_id">
-            <td class="border px-4 py-2">{{ item.product_name }}</td>
-            <td class="border px-4 py-2">{{ item.quantity }}</td>
-            <td class="border px-4 py-2">{{ formatCurrency(item.unit_price) }}</td>
-            <td class="border px-4 py-2">{{ item.tax_percent }}%</td>
-            <td class="border px-4 py-2">
-              {{ formatCurrency(lineTotal(item)) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Totals Row -->
-      <div class="mt-4 text-right">
-        <p class="font-semibold">
-          Total Quantity: <span>{{ totalQuantity }}</span>
-        </p>
-        <p class="font-semibold">
-          Total Price: <span>{{ formatCurrency(totalPrice) }}</span>
-        </p>
-      </div>
-    </div>
-  </MainLayout>
-</template>
-
-<script>
-import supabase from '@/services/supabase';
-import { formatCurrency } from '@/utils/formatters';
-
-export default {
-  name: 'OrderDetailsView',
-  data() {
-    return {
-      order: {
-        items: [],
-        client: {},
-      },
-      totalQuantity: 0,
-      totalPrice: 0,
-    };
-  },
-  filters: {
-    formatCurrency,
-  },
-  async mounted() {
-    const orderId = this.$route.params.id;
-    await this.loadOrder(orderId);
-  },
-  methods: {
-    async loadOrder(id) {
-      // Adjust the select to join client and items (with product info)
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          client: clients ( id, name, phone, address ),
-          items: order_items (
-            product_id,
-            quantity,
-            unit_price,
-            tax_percent,
-            product: products ( name )
-          )
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error('Error loading order:', error);
-        return;
-      }
-
-      // Flatten product name for each item
-      const items = data.items.map((it) => ({
-        product_id: it.product_id,
-        product_name: it.product.name,
-        quantity: it.quantity,
-        unit_price: it.unit_price,
-        tax_percent: it.tax_percent,
-      }));
-
-      this.order = {
-        id: data.id,
-        client: {
-          name: data.client.name,
-          phone: data.client.phone,
-          address: data.client.address,
-        },
-        items,
-      };
-
-      this.calculateTotals();
-    },
-
-    lineTotal(item) {
-      // line total = qty * unit_price + tax
-      const subtotal = item.quantity * item.unit_price;
-      const taxAmount = (item.tax_percent / 100) * subtotal;
-      return subtotal + taxAmount;
-    },
-
-    calculateTotals() {
-      this.totalQuantity = this.order.items.reduce(
-        (sum, item) => sum + item.quantity,
-        0
-      );
-      this.totalPrice = this.order.items.reduce(
-        (sum, item) => sum + this.lineTotal(item),
-        0
-      );
-    },
-  },
-};
-</script>
-
-<style scoped>
-/* any extra styles, if desired */
-</style>
-What changed:
-
-When fetching the order, we explicitly join order_items and then products and clients so that we have quantity, unit_price, tax_percent, and product.name.
-
-We added two computed values (totalQuantity and totalPrice) and recomputed them after loading.
-
-Each line shows lineTotal(item), which is (quantity × unit_price) + tax.
-
-4. “When I create new order I get error, you have to inspect it. The client information name phone address are necessary.”
-This will involve editing CreateOrderView.vue (likely located at src/views/CreateOrderView.vue).
-
-4.1 Identify the error
-Open src/views/CreateOrderView.vue in your editor.
-
-Look at the method that handles “Save” or “Submit” for a new order—often called submitOrder() or createOrder().
-
-Check which values are being sent to Supabase. If the error says something like “null value in column ‘client_name’ violates not-null constraint,” then you’ve discovered that you did not supply name, phone, or address.
-
-4.2 Example form with required client fields
-Below is a skeleton form and logic that enforces client info:
-
-vue
-نسخ
-تحرير
-<template>
-  <MainLayout>
-    <div class="p-4 max-w-lg mx-auto">
-      <h1 class="text-2xl font-bold mb-4">Create New Order</h1>
-
-      <!-- Client Info Section -->
-      <div class="mb-6">
-        <h2 class="text-xl font-semibold">Client Information</h2>
-
-        <label class="block text-sm font-medium mt-2">Name</label>
-        <input
-          type="text"
-          v-model="client.name"
-          class="mt-1 block w-full border-gray-300 rounded-md"
-          required
-        />
-
-        <label class="block text-sm font-medium mt-2">Phone</label>
-        <input
-          type="text"
-          v-model="client.phone"
-          class="mt-1 block w-full border-gray-300 rounded-md"
-          required
-        />
-
-        <label class="block text-sm font-medium mt-2">Address</label>
-        <input
-          type="text"
-          v-model="client.address"
-          class="mt-1 block w-full border-gray-300 rounded-md"
-          required
-        />
-      </div>
-
-      <!-- Products Section: (simplified) -->
-      <div class="mb-6">
-        <h2 class="text-xl font-semibold">Products</h2>
-        <!-- Add your product picker/input logic here -->
-        <!-- E.g., a list of line items with product_id, quantity, unit_price, tax_percent -->
-      </div>
-
-      <button
-        @click="submitOrder"
-        class="mt-4 px-4 py-2 bg-green-600 text-white rounded"
-      >
-        Create Order
-      </button>
-    </div>
-  </MainLayout>
-</template>
-
-<script>
-import supabase from '@/services/supabase';
-
-export default {
-  name: 'CreateOrderView',
-  data() {
-    return {
-      client: {
-        name: '',
-        phone: '',
-        address: '',
-      },
-      items: [
-        /* Example:
-        {
-          product_id: null,
-          quantity: 1,
-          unit_price: 0,
-          tax_percent: 0
-        }
-        */
-      ],
-    };
-  },
-  methods: {
-    async submitOrder() {
-      // First, validate that client info is not empty
-      if (
-        !this.client.name.trim() ||
-        !this.client.phone.trim() ||
-        !this.client.address.trim()
-      ) {
-        this.$notify({
-          type: 'warning',
-          message: 'Client name, phone, and address are required.',
-        });
-        return;
-      }
-
-      // Option A: If you have a separate "clients" table, insert or upsert client first
-      // Then use the returned client.id as foreign key on the order.
-      // Option B: If your orders table stores client fields directly, include them in the insert below.
-
-      // Example if your orders table has columns: client_name, client_phone, client_address, total_amount, etc.
-      const orderData = {
-        client_name: this.client.name,
-        client_phone: this.client.phone,
-        client_address: this.client.address,
-        total_amount: this.calculateTotal(),
-        // ... any other order-level fields
-      };
-
-      const { data: orderResult, error: orderError } = await supabase
-        .from('orders')
-        .insert(orderData)
-        .single();
-
-      if (orderError) {
-        console.error('Error inserting order:', orderError);
-        this.$notify({
-          type: 'error',
-          message: `Failed to create order: ${orderError.message}`,
-        });
-        return;
-      }
-
-      // Now insert line items
-      const itemsToInsert = this.items.map((it) => ({
-        order_id: orderResult.id,
-        product_id: it.product_id,
-        quantity: it.quantity,
-        unit_price: it.unit_price,
-        tax_percent: it.tax_percent,
-      }));
-
-      if (itemsToInsert.length > 0) {
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(itemsToInsert);
-
-        if (itemsError) {
-          console.error('Error inserting order items:', itemsError);
-          this.$notify({
-            type: 'error',
-            message: `Order created but failed to add items: ${itemsError.message}`,
-          });
-          return;
-        }
-      }
-
-      this.$notify({
-        type: 'success',
-        message: 'Order created successfully!',
-      });
-      this.$router.push({ name: 'OrdersView' });
-    },
-
-    calculateTotal() {
-      return this.items.reduce((sum, it) => {
-        const lineSubtotal = it.quantity * it.unit_price;
-        const taxAmount = (it.tax_percent / 100) * lineSubtotal;
-        return sum + lineSubtotal + taxAmount;
-      }, 0);
-    },
-  },
-};
-</script>
-
-<style scoped>
-/* any extra styling */
-</style>
-Adjust the above as follows:
-
-If your app stores clients in a separate clients table, do an upsert to clients first, grab clientId, then pass client_id in the orders.insert(...) call.
-
-If your orders table expects columns named differently (e.g. name, phone, address instead of client_name, etc.), rename the keys in orderData accordingly.
-
-5. “When I share order by WhatsApp it should include client information and order information.”
-I assume you already have a “Share” button in OrderDetailsView.vue (or maybe in OrdersView.vue) that currently opens WhatsApp but only sends a link or minimal info. You want to package a message string that concatenates:
-
-Client name, phone, address
-
-Order ID, date, total quantity, total price
-
-And perhaps a list of line items (product name × qty, unit price, tax, line total)
-
-5.1 Add a “Share via WhatsApp” button in OrderDetailsView.vue
-Insert somewhere in the template (e.g., below the Totals):
-
-html
-نسخ
-تحرير
-<button
-  @click="shareOnWhatsApp"
-  class="mt-4 px-4 py-2 bg-green-500 text-white rounded"
->
-  Share via WhatsApp
-</button>
-5.2 Build the message payload
-In the <script> section of the same file, add:
-
-js
-نسخ
-تحرير
-methods: {
-  // ...existing methods (loadOrder, lineTotal, calculateTotals)...
-
-  shareOnWhatsApp() {
-    // Build a multiline message
-    let msgLines = [];
-    msgLines.push(`*Order ID:* ${this.order.id}`);
-    msgLines.push(`*Date:* ${new Date(this.order.created_at).toLocaleString()}`);
-    msgLines.push(``);
-    msgLines.push(`*Client Info*`);
-    msgLines.push(`Name: ${this.order.client.name}`);
-    msgLines.push(`Phone: ${this.order.client.phone}`);
-    msgLines.push(`Address: ${this.order.client.address}`);
-    msgLines.push(``);
-    msgLines.push(`*Order Items:*`);
-
-    this.order.items.forEach((item) => {
-      const lineSub = item.quantity * item.unit_price;
-      const taxAmt = (item.tax_percent / 100) * lineSub;
-      const lineTotal = lineSub + taxAmt;
-
-      msgLines.push(
-        `${item.product_name} — qty: ${item.quantity}, unit: ${formatCurrency(
-          item.unit_price
-        )}, tax: ${item.tax_percent}% → line: ${formatCurrency(lineTotal)}`
-      );
-    });
-
-    msgLines.push(``);
-    msgLines.push(`*Total Qty:* ${this.totalQuantity}`);
-    msgLines.push(`*Total Price:* ${formatCurrency(this.totalPrice)}`);
-
-    const fullMessage = encodeURIComponent(msgLines.join('\n'));
-
-    // WhatsApp URL (web version) for a blank chat:
-    const whatsappUrl = `https://wa.me/?text=${fullMessage}`;
-
-    // Open in a new tab
-    window.open(whatsappUrl, '_blank');
-  },
-},
-Be sure to import formatCurrency at the top:
-
-js
-نسخ
-تحرير
-import { formatCurrency } from '@/utils/formatters';
-Notes:
-
-The encodeURIComponent(...) call ensures special characters (spaces, line breaks) convert to a URL-safe string.
-
-https://wa.me/?text=... opens WhatsApp Web (or mobile) with a pre-filled message. If you want to pre-fill a specific phone number, you can append &phone=1234567890 (in international format).
-
-Surrounding fields with *asterisks* will render bold in WhatsApp.
-
-Summary of File Changes
-Below is a quick map of which files to update and the high-level actions:
-
-src/utils/invoiceGenerator.js
-
-Ensure a working createPdfFromElement(...) function using jsPDF + html2canvas.
-
-src/views/ReportsView.vue
-
-Wrap report content in <div id="report-content">...</div>.
-
-Add a <select> bound to selectedUserId to filter by user.
-
-Fetch users in mounted() and re-run fetchReportData() on change.
-
-Call createPdfFromElement('report-content') when “Download as PDF” is clicked.
-
-src/views/OrderDetailsView.vue
-
-Modify the Supabase query to join order_items (with quantity, unit_price, tax_percent, and products.name).
-
-Add methods lineTotal(item) and calculateTotals() to compute per-line and grand totals.
-
-Display Total Quantity and Total Price in the template.
-
-Add a “Share via WhatsApp” button that calls shareOnWhatsApp().
-
-Implement shareOnWhatsApp() to build a multiline message containing client and order details, encode it, and open https://wa.me/?text=....
-
-src/views/CreateOrderView.vue
-
-Add required inputs: client.name, client.phone, client.address.
-
-In submitOrder(), validate that none of these fields are empty.
-
-Insert into orders (including client fields), then insert order_items separately.
-
-Show error notifications if any insert fails.
-
-Final Checklist
-Install missing dependencies (run in your project root):
-
-bash
-نسخ
-تحرير
-npm install jspdf html2canvas
-Verify your Supabase schema:
-
-orders table has columns for client_name, client_phone, client_address (or a client_id FK).
-
-order_items table stores order_id, product_id, quantity, unit_price, tax_percent.
-
-products table has id & name.
-
-users table has id & name.
-
-Rebuild and restart your dev server:
-
-bash
-نسخ
-تحرير
-npm run dev
-Then navigate to:
-
-Reports page → confirm “Filter by User” works and PDF downloads.
-
-Orders → Create New → ensure you cannot submit without client name/phone/address, and no errors appear in console.
-
-Orders → [Click any Order] → see each line’s quantity, price, tax, and grand totals.
-
-Click “Share via WhatsApp” to confirm the message is pre-filled with both client and order info.
-
-With these updates in place, your PDF generation should work, you’ll have a “reports by user” filter, order detail pages will correctly calculate totals, validation will enforce client info on new orders, and the WhatsApp share will include all relevant data. Let me know if anything still needs tweaking!
+-- سياسة تحديث المستخدمين (للمدراء أو المستخدم نفسه)
+CREATE POLICY "users_update_policy" ON public.users
+  FOR UPDATE USING (
+    auth.role() = 'authenticated' AND
+    (
+      id = auth.uid() OR
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role = 'admin'
+      ) OR
+      (
+        EXISTS (
+          SELECT 1 FROM public.users 
+          WHERE id = auth.uid() AND role = 'sales_manager'
+        ) AND
+        (
+          SELECT role FROM public.users WHERE id = users.id
+        ) NOT IN ('admin', 'sales_manager')
+      )
+    )
+  );
+
+-- سياسة حذف المستخدمين (للمدراء فقط، مع قيود إضافية لمدير المبيعات)
+CREATE POLICY "users_delete_policy" ON public.users
+  FOR DELETE USING (
+    auth.role() = 'authenticated' AND
+    (
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role = 'admin'
+      ) OR
+      (
+        EXISTS (
+          SELECT 1 FROM public.users 
+          WHERE id = auth.uid() AND role = 'sales_manager'
+        ) AND
+        (
+          SELECT role FROM public.users WHERE id = users.id
+        ) = 'representative'
+      )
+    )
+  );
+
+-- سياسات جدول الطلبات
+-- سياسة قراءة الطلبات (للمدراء: جميع الطلبات، للمندوبين: طلباتهم فقط)
+CREATE POLICY "orders_select_policy" ON public.orders
+  FOR SELECT USING (
+    auth.role() = 'authenticated' AND
+    (
+      sales_rep_id = auth.uid() OR
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+      )
+    )
+  );
+
+-- سياسة إدخال الطلبات (للمستخدمين المصادق عليهم)
+CREATE POLICY "orders_insert_policy" ON public.orders
+  FOR INSERT WITH CHECK (
+    auth.role() = 'authenticated'
+  );
+
+-- سياسة تحديث الطلبات (للمدراء أو مندوب المبيعات المسؤول)
+CREATE POLICY "orders_update_policy" ON public.orders
+  FOR UPDATE USING (
+    auth.role() = 'authenticated' AND
+    (
+      sales_rep_id = auth.uid() OR
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+      )
+    )
+  );
+
+-- سياسة حذف الطلبات (للمدراء فقط)
+CREATE POLICY "orders_delete_policy" ON public.orders
+  FOR DELETE USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM public.users 
+      WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+    )
+  );
+
+-- سياسات جدول منتجات الطلبات
+-- سياسة قراءة منتجات الطلبات
+CREATE POLICY "order_products_select_policy" ON public.order_products
+  FOR SELECT USING (
+    auth.role() = 'authenticated' AND
+    (
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+      ) OR
+      EXISTS (
+        SELECT 1 FROM public.orders
+        WHERE orders.id = order_products.order_id AND orders.sales_rep_id = auth.uid()
+      )
+    )
+  );
+
+-- سياسة إدخال منتجات الطلبات
+CREATE POLICY "order_products_insert_policy" ON public.order_products
+  FOR INSERT WITH CHECK (
+    auth.role() = 'authenticated' AND
+    (
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+      ) OR
+      EXISTS (
+        SELECT 1 FROM public.orders
+        WHERE orders.id = order_products.order_id AND orders.sales_rep_id = auth.uid()
+      )
+    )
+  );
+
+-- سياسة تحديث منتجات الطلبات
+CREATE POLICY "order_products_update_policy" ON public.order_products
+  FOR UPDATE USING (
+    auth.role() = 'authenticated' AND
+    (
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+      ) OR
+      EXISTS (
+        SELECT 1 FROM public.orders
+        WHERE orders.id = order_products.order_id AND orders.sales_rep_id = auth.uid()
+      )
+    )
+  );
+
+-- سياسة حذف منتجات الطلبات
+CREATE POLICY "order_products_delete_policy" ON public.order_products
+  FOR DELETE USING (
+    auth.role() = 'authenticated' AND
+    (
+      EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')
+      ) OR
+      EXISTS (
+        SELECT 1 FROM public.orders
+        WHERE orders.id = order_products.order_id AND orders.sales_rep_id = auth.uid()
+      )
+    )
+  );
+
+-- إنشاء وظيفة لحساب إجماليات الطلب تلقائياً
+CREATE OR REPLACE FUNCTION calculate_order_totals()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- حساب مبلغ الضريبة
+  NEW.tax_amount := NEW.subtotal * (NEW.tax_rate / 100);
+  
+  -- حساب الإجمالي
+  NEW.total := NEW.subtotal + NEW.tax_amount;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- إنشاء محفز لتطبيق وظيفة حساب الإجماليات
+DROP TRIGGER IF EXISTS calculate_order_totals_trigger ON public.orders;
+CREATE TRIGGER calculate_order_totals_trigger
+BEFORE INSERT OR UPDATE ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION calculate_order_totals();
+
+-- إنشاء وظيفة لحساب إجماليات منتجات الطلب
+CREATE OR REPLACE FUNCTION calculate_product_subtotal()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- حساب المجموع الفرعي للمنتج
+  NEW.subtotal := NEW.quantity * NEW.unit_price;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- إنشاء محفز لتطبيق وظيفة حساب إجماليات المنتجات
+DROP TRIGGER IF EXISTS calculate_product_subtotal_trigger ON public.order_products;
+CREATE TRIGGER calculate_product_subtotal_trigger
+BEFORE INSERT OR UPDATE ON public.order_products
+FOR EACH ROW
+EXECUTE FUNCTION calculate_product_subtotal();
+
+-- إنشاء وظيفة لتحديث وقت التعديل تلقائياً
+CREATE OR REPLACE FUNCTION update_modified_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- إنشاء محفزات لتحديث وقت التعديل
+DROP TRIGGER IF EXISTS update_users_timestamp ON public.users;
+CREATE TRIGGER update_users_timestamp
+BEFORE UPDATE ON public.users
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_timestamp();
+
+DROP TRIGGER IF EXISTS update_orders_timestamp ON public.orders;
+CREATE TRIGGER update_orders_timestamp
+BEFORE UPDATE ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_timestamp();
+
+-- ======== إضافة وظيفة التفعيل التلقائي للمستخدمين ========
+
+-- وظيفة لتفعيل المستخدمين تلقائياً عند إنشائهم
+CREATE OR REPLACE FUNCTION auto_confirm_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- تحديث حالة المستخدم في جدول auth.users لتكون مفعلة
+  -- نقوم بتحديث email_confirmed_at فقط لأن confirmed_at هو عمود مولّد
+  UPDATE auth.users
+  SET email_confirmed_at = now()
+  WHERE id = NEW.id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- حذف المحفز إن وجد
+DROP TRIGGER IF EXISTS auto_confirm_user_trigger ON auth.users;
+
+-- إنشاء محفز لتفعيل المستخدمين تلقائياً عند إنشائهم
+CREATE TRIGGER auto_confirm_user_trigger
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION auto_confirm_user();
+
+-- منح صلاحيات تنفيذ الوظائف
+GRANT EXECUTE ON FUNCTION auto_confirm_user() TO service_role;
+
+-- تفعيل المستخدمين الحاليين الذين لم يتم تفعيلهم بعد
+UPDATE auth.users
+SET email_confirmed_at = now()
+WHERE email_confirmed_at IS NULL;

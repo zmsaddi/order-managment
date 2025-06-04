@@ -425,18 +425,14 @@ export default {
           return
         }
         
-        // إعداد بيانات الطلب للحفظ - حفظ جميع المنتجات منفصلة
-        // حساب الكمية الإجمالية وسعر الوحدة المتوسط للعرض فقط
+        // إعداد بيانات الطلب للحفظ - استخدام جدول المنتجات المنفصل
+        // حفظ المنتج الأول فقط في product_description للتوافق مع النظام القديم
+        const firstProduct = order.value.items[0]
+        const productDescription = firstProduct ? firstProduct.name : 'منتج غير محدد'
+        
+        // حساب الكمية الإجمالية وسعر الوحدة المتوسط للملاحظات
         const totalQuantity = order.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
         const averageUnitPrice = totalQuantity > 0 ? (order.value.subtotal / totalQuantity) : 0
-        
-        // حفظ جميع المنتجات منفصلة في product_description كـ JSON
-        const productsData = order.value.items.map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price
-        }))
-        const productDescription = JSON.stringify(productsData)
         
         // إضافة معلومات إضافية في الملاحظات
         const additionalInfo = `الكمية الإجمالية: ${totalQuantity}\nسعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
@@ -458,13 +454,37 @@ export default {
           sales_rep_id: JSON.parse(localStorage.getItem('user') || '{}').id
         }
         
-        // إنشاء الطلب في قاعدة البيانات
-        const { data, error } = await supabase
+        // إنشاء الطلب في قاعدة البيانات أولاً
+        const { data: createdOrder, error: orderError } = await supabase
           .from('orders')
           .insert([orderData])
           .select()
         
-        if (error) throw error
+        if (orderError) throw orderError
+        
+        const orderId = createdOrder[0].id
+        
+        // حفظ كل منتج منفصل في جدول order_products
+        for (const item of order.value.items) {
+          const productData = {
+            order_id: orderId,
+            name: item.name,
+            description: item.description || '',
+            notes: item.notes || '',
+            quantity: Number(item.quantity),
+            unit_price: Number(item.price),
+            subtotal: Number(item.quantity * item.price)
+          }
+          
+          const { error: productError } = await supabase
+            .from('order_products')
+            .insert([productData])
+          
+          if (productError) {
+            console.error('خطأ في حفظ المنتج:', productError)
+            // لا نوقف العملية، نكمل حفظ باقي المنتجات
+          }
+        }
         
         alert('تم إنشاء الطلب بنجاح')
         router.push('/orders')
