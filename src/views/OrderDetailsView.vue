@@ -370,21 +370,22 @@ export default {
       }
     }
     
-    // مشاركة الطلب عبر واتساب
+    // مشاركة الطلب عبر واتساب - موحدة لجميع المنصات
     const shareOnWhatsApp = () => {
       if (!order.value) return
       
-      // استخراج معلومات المنتجات من وصف المنتج
+      // استخراج معلومات المنتجات من الملاحظات
       let productsText = ''
-      if (order.value.product_description) {
-        // إذا كان الوصف يحتوي على منتجات متعددة (مفصولة بفاصلة)
-        if (order.value.product_description.includes(',')) {
-          const products = order.value.product_description.split(',').map(p => p.trim())
+      if (order.value.notes && order.value.notes.includes('المنتجات:')) {
+        // استخراج قائمة المنتجات من الملاحظات
+        const match = order.value.notes.match(/المنتجات:\s*([^\n]+)/)
+        if (match && match[1]) {
+          const products = match[1].split(',').map(p => p.trim())
           productsText = products.map((product, index) => `${index + 1}. ${product}`).join('\n')
-        } else {
-          // منتج واحد
-          productsText = `1. ${order.value.product_description}`
         }
+      } else if (order.value.product_description) {
+        // إذا لم توجد في الملاحظات، استخدم وصف المنتج
+        productsText = `1. ${order.value.product_description}`
       }
       
       // استخراج الكمية الإجمالية من الملاحظات
@@ -396,6 +397,7 @@ export default {
         }
       }
       
+      // رسالة موحدة لجميع المنصات
       const message = `🛍️ تفاصيل الطلب
 
 📋 رقم الطلب: ${order.value.id}
@@ -415,43 +417,11 @@ ${productsText}${totalQuantity}
       
       const encodedMessage = encodeURIComponent(message)
       
-      // التحقق من نوع الجهاز والبيئة
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      const isAndroid = /Android/i.test(navigator.userAgent)
-      const isInApp = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches
+      // استخدام نفس الرابط لجميع المنصات لضمان التوحيد
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`
       
-      // للتطبيقات الأندرويد: استخدام Web Share API إذا كان متاحاً
-      if (isAndroid && isInApp && navigator.share) {
-        navigator.share({
-          title: 'تفاصيل الطلب',
-          text: message,
-        }).catch((error) => {
-          console.log('Error sharing:', error)
-          // في حالة فشل Web Share API، استخدم الطريقة التقليدية
-          fallbackShare(encodedMessage, isMobile)
-        })
-      } else {
-        fallbackShare(encodedMessage, isMobile)
-      }
-    }
-    
-    // دالة مساعدة للمشاركة التقليدية
-    const fallbackShare = (encodedMessage, isMobile) => {
-      if (isMobile) {
-        // للموبايل: استخدام رابط واتساب المباشر
-        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`
-        
-        // محاولة فتح الرابط في نفس النافذة للتطبيقات
-        try {
-          window.location.href = whatsappUrl
-        } catch (error) {
-          // في حالة الفشل، فتح في نافذة جديدة
-          window.open(whatsappUrl, '_blank')
-        }
-      } else {
-        // للكمبيوتر: فتح في نافذة جديدة
-        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank')
-      }
+      // فتح الرابط بنفس الطريقة لجميع المنصات
+      window.open(whatsappUrl, '_blank')
     }
     
     // إنشاء فاتورة
@@ -551,7 +521,6 @@ ${productsText}${totalQuantity}
       getStatusClass,
       updateOrderStatus,
       shareOnWhatsApp,
-      fallbackShare,
       generateInvoice,
       showDeleteModal,
       confirmDeleteOrder,

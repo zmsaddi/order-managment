@@ -430,13 +430,19 @@ export default {
         const totalQuantity = order.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
         const averageUnitPrice = totalQuantity > 0 ? (order.value.subtotal / totalQuantity) : 0
         
-        // تجميع أسماء المنتجات مع الكميات والأسعار
-        const productDescriptions = order.value.items.map(item => 
+        // حفظ المنتج الأول فقط في وصف المنتج (عدم التجميع)
+        const primaryProduct = order.value.items.length > 0 ? order.value.items[0] : null
+        const productDescription = primaryProduct ? 
+          `${primaryProduct.name}` : 
+          'منتج غير محدد'
+        
+        // حفظ تفاصيل جميع المنتجات في الملاحظات للمرجعية
+        const allProductsDetails = order.value.items.map(item => 
           `${item.name} (الكمية: ${item.quantity}, السعر: €${item.price})`
         ).join(', ')
         
         // إضافة معلومات إضافية في الملاحظات
-        const additionalInfo = `الكمية الإجمالية: ${totalQuantity}, سعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
+        const additionalInfo = `المنتجات: ${allProductsDetails}\nالكمية الإجمالية: ${totalQuantity}\nسعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
         const finalNotes = order.value.notes ? 
           `${order.value.notes.trim()}\n\n${additionalInfo}` : 
           additionalInfo
@@ -445,7 +451,7 @@ export default {
           customer_name: order.value.customer_name.trim(),
           customer_phone: order.value.customer_phone.trim(),
           customer_address: order.value.customer_address.trim(),
-          product_description: productDescriptions,
+          product_description: productDescription,
           subtotal: Number(order.value.subtotal),
           tax_rate: Number(order.value.taxRate),
           tax_amount: Number(order.value.tax),
