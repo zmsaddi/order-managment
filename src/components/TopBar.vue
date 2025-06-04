@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white shadow-sm z-10">
+  <header class="bg-white shadow-sm z-10 fixed top-0 left-0 right-0">
     <div class="flex items-center justify-between p-4">
       <div class="flex items-center">
         <!-- زر فتح القائمة الجانبية للهواتف المحمولة - يظهر في الشريط العلوي بدلاً من أسفل الشاشة -->
