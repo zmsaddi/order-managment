@@ -314,13 +314,30 @@ export default {
       loading.value = true
       
       try {
+        console.log('معرف الطلب من الرابط:', route.params.id)
+        console.log('نوع معرف الطلب:', typeof route.params.id)
+        
+        // تحويل معرف الطلب إلى رقم
+        const orderId = parseInt(route.params.id)
+        console.log('معرف الطلب بعد التحويل:', orderId)
+        
+        if (isNaN(orderId)) {
+          throw new Error('معرف الطلب غير صحيح')
+        }
+        
         const { data, error } = await supabase
           .from('orders')
           .select('*')
-          .eq('id', route.params.id)
+          .eq('id', orderId)
           .single()
         
+        console.log('نتيجة الاستعلام:', { data, error })
+        
         if (error) throw error
+        
+        if (!data) {
+          throw new Error('لم يتم العثور على الطلب')
+        }
         
         order.value = data
         newStatus.value = data.status
