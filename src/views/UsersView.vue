@@ -88,9 +88,19 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-sm">
-                <span :class="getStatusClass(user.status)" class="px-2 py-1 text-xs rounded-full">
-                  {{ getStatusText(user.status) }}
-                </span>
+                <div class="flex items-center">
+                  <select 
+                    :value="user.status" 
+                    @change="changeUserStatus(user, $event.target.value)"
+                    class="text-xs rounded-full px-2 py-1 border-0 focus:ring-2 focus:ring-sky-500"
+                    :class="getStatusSelectClass(user.status)"
+                  >
+                    <option value="active">نشط</option>
+                    <option value="inactive">غير نشط</option>
+                    <option value="suspended">معلق</option>
+                    <option value="pending">في الانتظار</option>
+                  </select>
+                </div>
               </td>
               <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(user.created_at) }}</td>
               <td class="px-4 py-3 text-sm text-gray-900">
@@ -105,11 +115,12 @@
                     </svg>
                   </button>
                   
+                  <!-- أزرار سريعة لتغيير الحالة -->
                   <button 
                     v-if="user.status === 'active'" 
-                    @click="toggleUserStatus(user)" 
+                    @click="changeUserStatus(user, 'inactive')" 
                     class="text-yellow-600 hover:text-yellow-800"
-                    title="إيقاف"
+                    title="إيقاف المستخدم"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd" />
@@ -117,13 +128,35 @@
                   </button>
                   
                   <button 
-                    v-else 
-                    @click="toggleUserStatus(user)" 
+                    v-else-if="user.status === 'inactive'" 
+                    @click="changeUserStatus(user, 'active')" 
                     class="text-green-600 hover:text-green-800"
-                    title="تفعيل"
+                    title="تفعيل المستخدم"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  <button 
+                    v-else-if="user.status === 'suspended'" 
+                    @click="changeUserStatus(user, 'active')" 
+                    class="text-green-600 hover:text-green-800"
+                    title="إلغاء التعليق"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  <button 
+                    v-else-if="user.status === 'pending'" 
+                    @click="changeUserStatus(user, 'active')" 
+                    class="text-green-600 hover:text-green-800"
+                    title="قبول المستخدم"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
                   </button>
                   
@@ -458,11 +491,11 @@ export default {
       }
     }
     
-    // تبديل حالة المستخدم
-    const toggleUserStatus = async (user) => {
+    // تغيير حالة المستخدم
+    const changeUserStatus = async (user, newStatus) => {
+      if (user.status === newStatus) return
+      
       try {
-        const newStatus = user.status === 'active' ? 'inactive' : 'active'
-        
         const { error } = await supabase
           .from('users')
           .update({ status: newStatus })
@@ -475,10 +508,20 @@ export default {
         if (index !== -1) {
           users.value[index].status = newStatus
         }
+        
+        // إظهار رسالة نجاح
+        const statusText = getStatusText(newStatus)
+        alert(`تم تغيير حالة المستخدم إلى: ${statusText}`)
       } catch (error) {
         console.error('خطأ في تغيير حالة المستخدم:', error)
         alert('حدث خطأ أثناء تغيير حالة المستخدم')
       }
+    }
+    
+    // تبديل حالة المستخدم (للأزرار)
+    const toggleUserStatus = async (user) => {
+      const newStatus = user.status === 'active' ? 'inactive' : 'active'
+      await changeUserStatus(user, newStatus)
     }
     
     // التحقق من إمكانية حذف المستخدم
@@ -543,13 +586,33 @@ export default {
     }
     
     const getStatusText = (status) => {
-      return status === 'active' ? 'نشط' : 'غير نشط'
+      const statuses = {
+        active: 'نشط',
+        inactive: 'غير نشط',
+        suspended: 'معلق',
+        pending: 'في الانتظار'
+      }
+      return statuses[status] || status
     }
     
     const getStatusClass = (status) => {
-      return status === 'active' 
-        ? 'bg-green-100 text-green-800' 
-        : 'bg-red-100 text-red-800'
+      const classes = {
+        active: 'bg-green-100 text-green-800',
+        inactive: 'bg-red-100 text-red-800',
+        suspended: 'bg-yellow-100 text-yellow-800',
+        pending: 'bg-blue-100 text-blue-800'
+      }
+      return classes[status] || 'bg-gray-100 text-gray-800'
+    }
+    
+    const getStatusSelectClass = (status) => {
+      const classes = {
+        active: 'bg-green-100 text-green-800',
+        inactive: 'bg-red-100 text-red-800',
+        suspended: 'bg-yellow-100 text-yellow-800',
+        pending: 'bg-blue-100 text-blue-800'
+      }
+      return classes[status] || 'bg-gray-100 text-gray-800'
     }
     
     // تهيئة الصفحة
@@ -577,6 +640,7 @@ export default {
       editUser,
       closeUserModal,
       saveUser,
+      changeUserStatus,
       toggleUserStatus,
       canDeleteUser,
       confirmDeleteUser,
@@ -586,6 +650,7 @@ export default {
       getRoleClass,
       getStatusText,
       getStatusClass,
+      getStatusSelectClass,
       formatDate
     }
   }
