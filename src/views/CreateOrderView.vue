@@ -34,15 +34,15 @@
               
               <div>
                 <label for="customer-phone" class="form-label">رقم الهاتف <span class="text-red-500">*</span></label>
-                <input 
-                  type="tel" 
-                  id="customer-phone" 
-                  v-model="order.customer_phone" 
-                  class="form-input"
-                  required
+                <NumberInput
+                  id="customer-phone"
+                  v-model="order.customer_phone"
+                  type="tel"
                   placeholder="مثال: +966501234567 أو 0501234567"
+                  input-class="form-input"
                   pattern="[\+]?[0-9\-\s()]{8,20}"
-                  title="يرجى إدخال رقم هاتف صحيح (يمكن أن يبدأ بـ + للأرقام الدولية)"
+                  input-mode="tel"
+                  required
                 />
               </div>
               
@@ -82,38 +82,32 @@
                 
                 <div>
                   <label :for="`item-quantity-${index}`" class="form-label">الكمية <span class="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
-                    :id="`item-quantity-${index}`" 
-                    v-model.number="item.quantity" 
-                    class="form-input text-center text-lg md:text-sm"
+                  <NumberInput
+                    :id="`item-quantity-${index}`"
+                    v-model="item.quantity"
+                    :decimals="0"
                     min="1"
                     max="9999"
-                    step="1"
-                    required
                     placeholder="1"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    @input="calculateItemTotal(index)"
-                    @blur="item.quantity = Math.round(parseEnglishNumber(item.quantity)) || 1; calculateItemTotal(index)"
-                    @focus="$event.target.select()"
+                    input-class="form-input text-center text-lg md:text-sm"
+                    required
+                    @change="calculateItemTotal(index)"
                   />
+                </div>
                 </div>
                 
                 <div>
                   <label :for="`item-price-${index}`" class="form-label">السعر (يورو) <span class="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
-                    :id="`item-price-${index}`" 
-                    v-model.number="item.price" 
-                    class="form-input"
+                  <NumberInput
+                    :id="`item-price-${index}`"
+                    v-model="item.price"
+                    :decimals="2"
                     min="0.01"
                     max="999999"
-                    step="0.01"
-                    required
                     placeholder="0.00"
-                    @input="calculateItemTotal(index)"
-                    @blur="item.price = parseEnglishNumber(item.price); calculateItemTotal(index)"
+                    input-class="form-input"
+                    required
+                    @change="calculateItemTotal(index)"
                   />
                 </div>
                 
@@ -166,17 +160,16 @@
               
               <div>
                 <label for="tax-rate" class="form-label">نسبة الضريبة (%)</label>
-                <input 
-                  type="number" 
-                  id="tax-rate" 
-                  v-model.number="order.taxRate" 
-                  class="form-input"
+                <NumberInput
+                  id="tax-rate"
+                  v-model="order.taxRate"
+                  :decimals="1"
                   min="0"
                   max="100"
-                  step="0.1"
+                  placeholder="0.0"
+                  input-class="form-input"
                   @input="handleTaxRateChange"
-                  @blur="handleTaxRateBlur"
-                  @keyup="handleTaxRateChange"
+                  @change="handleTaxRateBlur"
                 />
               </div>
               
@@ -246,13 +239,24 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../services/supabase.js'
-import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers } from '../utils/formatters.js'
+import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers, autoConvertNumbers, formatInteger } from '../utils/formatters.js'
+import { 
+  DEFAULT_TAX_RATE, 
+  calculateOrderTotals, 
+  calculateItemTotal, 
+  normalizeTaxRate,
+  getTaxRate
+} from '../utils/taxCalculations.js'
+import NumberInput from '../components/NumberInput.vue'
 
 export default {
   name: 'CreateOrderView',
+  components: {
+    NumberInput
+  },
   setup() {
     const router = useRouter()
     const submitting = ref(false)

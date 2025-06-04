@@ -1,5 +1,6 @@
 /**
  * ملف المنسقات - يحتوي على دوال تنسيق العملة والتاريخ والنصوص
+ * مع ضمان استخدام الأرقام الإنجليزية في جميع أنحاء المشروع
  */
 
 /**
@@ -36,6 +37,41 @@ export const parseEnglishNumber = (value) => {
 };
 
 /**
+ * تحويل تلقائي للأرقام في حقول الإدخال
+ * يستخدم في event handlers لضمان التحويل الفوري
+ * @param {Event} event - حدث الإدخال
+ * @returns {string} - القيمة المحولة
+ */
+export const autoConvertNumbers = (event) => {
+  const input = event.target;
+  const convertedValue = convertToEnglishNumbers(input.value);
+  input.value = convertedValue;
+  return convertedValue;
+};
+
+/**
+ * تنسيق رقم للعرض مع ضمان الأرقام الإنجليزية
+ * @param {number|string} value - القيمة المراد تنسيقها
+ * @param {number} decimals - عدد المنازل العشرية (افتراضي: 2)
+ * @returns {string} - الرقم منسق بالأرقام الإنجليزية
+ */
+export const formatNumber = (value, decimals = 2) => {
+  const numericValue = parseEnglishNumber(value);
+  const formatted = numericValue.toFixed(decimals);
+  return convertToEnglishNumbers(formatted);
+};
+
+/**
+ * تنسيق رقم صحيح للعرض مع ضمان الأرقام الإنجليزية
+ * @param {number|string} value - القيمة المراد تنسيقها
+ * @returns {string} - الرقم الصحيح منسق بالأرقام الإنجليزية
+ */
+export const formatInteger = (value) => {
+  const numericValue = Math.round(parseEnglishNumber(value));
+  return convertToEnglishNumbers(numericValue.toString());
+};
+
+/**
  * تنسيق المبلغ كعملة يورو مع ضمان استخدام الأرقام الإنجليزية
  * @param {number} amount - المبلغ المراد تنسيقه
  * @returns {string} - المبلغ منسقاً كعملة يورو بالأرقام الإنجليزية
@@ -44,7 +80,7 @@ export const formatCurrency = (amount) => {
   if (amount === null || amount === undefined) return '€0.00';
   
   // تحويل إلى رقم وضمان دقة المنزلتين العشريتين
-  const numericAmount = parseFloat(amount) || 0;
+  const numericAmount = parseEnglishNumber(amount);
   const roundedAmount = Math.round(numericAmount * 100) / 100;
   
   // تنسيق المبلغ باستخدام locale إنجليزي لضمان الأرقام الإنجليزية
@@ -58,6 +94,28 @@ export const formatCurrency = (amount) => {
   
   // استبدال رمز EUR بـ € وضمان الأرقام الإنجليزية
   return convertToEnglishNumbers(formatted.replace(/EUR/g, '€'));
+};
+
+/**
+ * تنسيق رقم الهاتف مع ضمان الأرقام الإنجليزية
+ * @param {string} phone - رقم الهاتف
+ * @returns {string} - رقم الهاتف بالأرقام الإنجليزية
+ */
+export const formatPhoneNumber = (phone) => {
+  if (!phone) return '';
+  return convertToEnglishNumbers(phone.toString());
+};
+
+/**
+ * تنسيق النسبة المئوية مع ضمان الأرقام الإنجليزية
+ * @param {number|string} percentage - النسبة المئوية
+ * @param {number} decimals - عدد المنازل العشرية (افتراضي: 1)
+ * @returns {string} - النسبة منسقة مع علامة %
+ */
+export const formatPercentage = (percentage, decimals = 1) => {
+  const numericValue = parseEnglishNumber(percentage);
+  const formatted = numericValue.toFixed(decimals);
+  return `${convertToEnglishNumbers(formatted)}%`;
 };
 
 /**

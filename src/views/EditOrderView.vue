@@ -263,10 +263,21 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../services/supabase.js'
-import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers } from '../utils/formatters.js'
+import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers, autoConvertNumbers, formatInteger } from '../utils/formatters.js'
+import { 
+  DEFAULT_TAX_RATE, 
+  calculateOrderTotals, 
+  calculateItemTotal, 
+  normalizeTaxRate,
+  getTaxRate
+} from '../utils/taxCalculations.js'
+import NumberInput from '../components/NumberInput.vue'
 
 export default {
   name: 'EditOrderView',
+  components: {
+    NumberInput
+  },
   setup() {
     const router = useRouter()
     const route = useRoute()
