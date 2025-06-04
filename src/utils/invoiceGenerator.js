@@ -3,7 +3,17 @@ import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate, getOrderStatusText } from './formatters';
 
 // Import the Arabic font as base64
-import AmiriTTF from '@/assets/fonts/Amiri-Regular.ttf?base64';
+import rawAmiri from '@/assets/fonts/Amiri-Regular.ttf?base64';
+
+// Strip off the data:…;base64, prefix before giving it to jsPDF
+const base64Amiri = rawAmiri.split(',')[1]; 
+
+// Register the font once, before creating any new jsPDF instance
+jsPDF.API.events.push(['addFonts', function() {
+  // pass in pure Base64 (no data:… prefix) to addFileToVFS
+  this.addFileToVFS('Amiri-Regular.ttf', base64Amiri);
+  this.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+}]);
 
 /**
  * توليد فاتورة PDF للطلب
@@ -13,13 +23,7 @@ import AmiriTTF from '@/assets/fonts/Amiri-Regular.ttf?base64';
  * @returns {jsPDF} - ملف PDF
  */
 export const generateInvoice = (order, products, salesRep) => {
-  // Embed the Amiri font into jsPDF's VFS before creating any PDF
-  jsPDF.API.events.push(['addFonts', function() {
-    this.addFileToVFS('Amiri-Regular.ttf', AmiriTTF);
-    this.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-  }]);
-
-  // إنشاء مستند PDF
+  // إنشاء مستند PDF (الخط مسجل بالفعل في الأعلى)
   const doc = new jsPDF();
   
   // إعداد الخط العربي
@@ -242,13 +246,7 @@ export const createPdfFromElement = async (elementId, options = {}) => {
  */
 export const generateReportPDF = async (reportData, summary, filters) => {
   try {
-    // Embed the same Amiri font into jsPDF's VFS
-    jsPDF.API.events.push(['addFonts', function() {
-      this.addFileToVFS('Amiri-Regular.ttf', AmiriTTF);
-      this.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-    }]);
-
-    // إنشاء مستند PDF
+    // إنشاء مستند PDF (الخط مسجل بالفعل في الأعلى)
     const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
