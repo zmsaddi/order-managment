@@ -128,9 +128,17 @@
               <td class="px-4 py-3 text-sm text-gray-900">{{ order.customer_name }}</td>
               <td class="px-4 py-3 text-sm text-gray-900">{{ formatCurrency(order.total) }}</td>
               <td class="px-4 py-3 text-sm">
-                <span :class="getOrderStatusClass(order.status)" class="px-2 py-1 text-xs rounded-full">
-                  {{ getOrderStatusText(order.status) }}
-                </span>
+                <select 
+                  :value="order.status" 
+                  @change="updateOrderStatus(order, $event.target.value)"
+                  class="text-xs px-2 py-1 rounded border border-gray-300 focus:border-blue-500 focus:outline-none"
+                  :class="getOrderStatusClass(order.status)"
+                >
+                  <option value="new">جديد</option>
+                  <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
+                  <option value="delivered">تم التسليم</option>
+                  <option value="cancelled">ملغى</option>
+                </select>
               </td>
               <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(order.created_at) }}</td>
               <td class="px-4 py-3 text-sm text-gray-900">
@@ -347,6 +355,29 @@ export default {
       }
     }
     
+    // تحديث حالة الطلب
+    const updateOrderStatus = async (order, newStatus) => {
+      try {
+        const { error } = await supabase
+          .from('orders')
+          .update({ status: newStatus })
+          .eq('id', order.id)
+        
+        if (error) throw error
+        
+        // تحديث الحالة في المصفوفة المحلية
+        const orderIndex = orders.value.findIndex(o => o.id === order.id)
+        if (orderIndex !== -1) {
+          orders.value[orderIndex].status = newStatus
+        }
+        
+        console.log('تم تحديث حالة الطلب بنجاح')
+      } catch (error) {
+        console.error('خطأ في تحديث حالة الطلب:', error)
+        alert('حدث خطأ أثناء تحديث حالة الطلب')
+      }
+    }
+    
     // تغيير حقل الفرز
     const sortBy = (field) => {
       if (sortField.value === field) {
@@ -435,6 +466,7 @@ export default {
       deleting,
       isAdmin,
       fetchOrders,
+      updateOrderStatus,
       sortBy,
       resetFilters,
       shareOnWhatsApp,
