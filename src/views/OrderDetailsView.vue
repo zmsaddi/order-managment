@@ -235,9 +235,6 @@ export default {
       return user.value.id === order.value.sales_rep_id
     })
     
-    // تبديل حالة القائمة الجانبية للجوال
-    }
-    
     // الحصول على نص حالة الطلب
     const getStatusText = (status) => {
       return getOrderStatusText(status)

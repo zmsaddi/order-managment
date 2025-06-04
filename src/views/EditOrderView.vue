@@ -328,9 +328,6 @@ export default {
     // مصفوفة المنتجات
     const products = ref([])
     
-    // تبديل حالة القائمة الجانبية للجوال
-    }
-    
     // حساب المجموع الفرعي للمنتج
     const calculateProductSubtotal = (index) => {
       const product = products.value[index]
