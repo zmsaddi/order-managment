@@ -94,10 +94,10 @@
                     @change="changeUserStatus(user, $event.target.value)"
                     class="text-xs rounded-full px-2 py-1 border-0 focus:ring-2 focus:ring-sky-500"
                     :class="getStatusSelectClass(user.status)"
+                    :disabled="!canChangeUserStatus(user, $event?.target?.value)"
                   >
-                    <option value="active">نشط</option>
+                    <option value="active" :disabled="!canSetUserActive(user)">نشط</option>
                     <option value="inactive">غير نشط</option>
-                    <option value="suspended">معلق</option>
                     <option value="pending">في الانتظار</option>
                   </select>
                 </div>
@@ -117,7 +117,7 @@
                   
                   <!-- أزرار سريعة لتغيير الحالة -->
                   <button 
-                    v-if="user.status === 'active'" 
+                    v-if="user.status === 'active' && canChangeToInactive(user)" 
                     @click="changeUserStatus(user, 'inactive')" 
                     class="text-yellow-600 hover:text-yellow-800"
                     title="إيقاف المستخدم"
@@ -128,7 +128,7 @@
                   </button>
                   
                   <button 
-                    v-else-if="user.status === 'inactive'" 
+                    v-else-if="user.status === 'inactive' && canSetUserActive(user)" 
                     @click="changeUserStatus(user, 'active')" 
                     class="text-green-600 hover:text-green-800"
                     title="تفعيل المستخدم"
@@ -139,18 +139,7 @@
                   </button>
                   
                   <button 
-                    v-else-if="user.status === 'suspended'" 
-                    @click="changeUserStatus(user, 'active')" 
-                    class="text-green-600 hover:text-green-800"
-                    title="إلغاء التعليق"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                  
-                  <button 
-                    v-else-if="user.status === 'pending'" 
+                    v-else-if="user.status === 'pending' && canSetUserActive(user)" 
                     @click="changeUserStatus(user, 'active')" 
                     class="text-green-600 hover:text-green-800"
                     title="قبول المستخدم"
@@ -465,13 +454,26 @@ export default {
           }
         } else {
           // إضافة مستخدم جديد
+          // تحديد الحالة الافتراضية حسب دور المستخدم الحالي
+          let defaultStatus = 'pending' // الافتراضي للجميع
+          
+          // إذا كان المدير العام يضيف مستخدم، يمكن أن يكون نشط
+          if (currentUser.value?.role === 'admin') {
+            defaultStatus = 'active'
+          }
+          // إذا كان مدير المبيعات يضيف مستخدم، يكون في الانتظار
+          else if (currentUser.value?.role === 'sales_manager') {
+            defaultStatus = 'pending'
+          }
+          
           const { data, error } = await supabase.auth.signUp({
             email: userForm.value.email,
             password: userForm.value.password,
             options: {
               data: {
                 name: userForm.value.name,
-                role: userForm.value.role
+                role: userForm.value.role,
+                status: defaultStatus
               }
             }
           })
@@ -491,9 +493,15 @@ export default {
       }
     }
     
-    // تغيير حالة المستخدم
+    // تغيير حالة المستخدم مع قيود الصلاحيات
     const changeUserStatus = async (user, newStatus) => {
       if (user.status === newStatus) return
+      
+      // التحقق من الصلاحيات
+      if (!canChangeUserStatus(user, newStatus)) {
+        alert('ليس لديك صلاحية لتغيير هذه الحالة')
+        return
+      }
       
       try {
         const { error } = await supabase
@@ -516,6 +524,48 @@ export default {
         console.error('خطأ في تغيير حالة المستخدم:', error)
         alert('حدث خطأ أثناء تغيير حالة المستخدم')
       }
+    }
+    
+    // التحقق من إمكانية تغيير حالة المستخدم
+    const canChangeUserStatus = (user, newStatus) => {
+      // المدير العام يمكنه تغيير أي حالة
+      if (currentUser.value?.role === 'admin') {
+        return true
+      }
+      
+      // مدير المبيعات
+      if (currentUser.value?.role === 'sales_manager') {
+        // يمكنه فقط تغيير حالة المندوبين
+        if (user.role !== 'sales_rep') return false
+        
+        // يمكنه تحويل من نشط إلى غير نشط فقط
+        if (user.status === 'active' && newStatus === 'inactive') return true
+        
+        // لا يمكنه وضع أي مستخدم في حالة نشط
+        if (newStatus === 'active') return false
+        
+        return false
+      }
+      
+      // المندوبين لا يمكنهم تغيير أي حالة
+      return false
+    }
+    
+    // التحقق من إمكانية وضع المستخدم في حالة نشط
+    const canSetUserActive = (user) => {
+      // فقط المدير العام يمكنه وضع المستخدمين في حالة نشط
+      return currentUser.value?.role === 'admin'
+    }
+    
+    // التحقق من إمكانية تحويل المستخدم إلى غير نشط
+    const canChangeToInactive = (user) => {
+      // المدير العام يمكنه تحويل أي مستخدم
+      if (currentUser.value?.role === 'admin') return true
+      
+      // مدير المبيعات يمكنه تحويل المندوبين فقط
+      if (currentUser.value?.role === 'sales_manager' && user.role === 'sales_rep') return true
+      
+      return false
     }
     
     // تبديل حالة المستخدم (للأزرار)
@@ -589,7 +639,6 @@ export default {
       const statuses = {
         active: 'نشط',
         inactive: 'غير نشط',
-        suspended: 'معلق',
         pending: 'في الانتظار'
       }
       return statuses[status] || status
@@ -599,7 +648,6 @@ export default {
       const classes = {
         active: 'bg-green-100 text-green-800',
         inactive: 'bg-red-100 text-red-800',
-        suspended: 'bg-yellow-100 text-yellow-800',
         pending: 'bg-blue-100 text-blue-800'
       }
       return classes[status] || 'bg-gray-100 text-gray-800'
@@ -609,7 +657,6 @@ export default {
       const classes = {
         active: 'bg-green-100 text-green-800',
         inactive: 'bg-red-100 text-red-800',
-        suspended: 'bg-yellow-100 text-yellow-800',
         pending: 'bg-blue-100 text-blue-800'
       }
       return classes[status] || 'bg-gray-100 text-gray-800'
@@ -642,6 +689,9 @@ export default {
       saveUser,
       changeUserStatus,
       toggleUserStatus,
+      canChangeUserStatus,
+      canSetUserActive,
+      canChangeToInactive,
       canDeleteUser,
       confirmDeleteUser,
       closeDeleteModal,
