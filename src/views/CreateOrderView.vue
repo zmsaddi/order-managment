@@ -471,8 +471,8 @@ export default {
             description: item.description || '',
             notes: item.notes || '',
             quantity: Number(item.quantity),
-            unit_price: Number(item.price),
-            subtotal: Number(item.quantity * item.price)
+            price: Number(item.price),
+            total: Number(item.quantity * item.price)
           }
           
           const { error: productError } = await supabase
@@ -481,7 +481,7 @@ export default {
           
           if (productError) {
             console.error('خطأ في حفظ المنتج:', productError)
-            // لا نوقف العملية، نكمل حفظ باقي المنتجات
+            throw productError // نوقف العملية إذا فشل حفظ أي منتج
           }
         }
         

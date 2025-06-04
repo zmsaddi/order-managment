@@ -54,10 +54,10 @@ export const generateInvoice = (order, products, salesRep) => {
   const tableHeaders = [['#', 'الوصف', 'الكمية', 'سعر الوحدة', 'المجموع']];
   const tableData = products.map((product, index) => [
     index + 1,
-    product.description,
+    product.name || product.description,
     product.quantity,
-    formatCurrency(product.unit_price),
-    formatCurrency(product.subtotal)
+    formatCurrency(product.price),
+    formatCurrency(product.total)
   ]);
   
   // إضافة الجدول
@@ -234,9 +234,6 @@ export const createPdfFromElement = async (elementId, options = {}) => {
  */
 export const generateReportPDF = async (reportData, summary, filters) => {
   try {
-    const { jsPDF } = await import('jspdf');
-    const autoTable = (await import('jspdf-autotable')).default;
-    
     // إنشاء مستند PDF
     const doc = new jsPDF({
       orientation: 'landscape',
