@@ -59,8 +59,8 @@ export const generateInvoice = (order, products, salesRep) => {
     formatCurrency(product.total)
   ]);
   
-  // إضافة الجدول
-  doc.autoTable({
+  // إضافة الجدول باستخدام الدالة المستوردة مباشرة
+  autoTable(doc, {
     head: tableHeaders,
     body: tableData,
     startY: 95,
@@ -301,8 +301,8 @@ export const generateReportPDF = async (reportData, summary, filters) => {
       formatCurrency(order.total)
     ]);
     
-    // إضافة الجدول
-    doc.autoTable({
+    // إضافة الجدول باستخدام الدالة المستوردة مباشرة
+    autoTable(doc, {
       head: tableHeaders,
       body: tableData,
       startY: yPosition,
