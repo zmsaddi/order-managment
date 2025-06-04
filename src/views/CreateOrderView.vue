@@ -92,11 +92,12 @@
                     required
                     placeholder="1"
                     @input="calculateItemTotal(index)"
+                    @blur="item.quantity = parseEnglishNumber(item.quantity)"
                   />
                 </div>
                 
                 <div>
-                  <label :for="`item-price-${index}`" class="form-label">السعر (ريال) <span class="text-red-500">*</span></label>
+                  <label :for="`item-price-${index}`" class="form-label">السعر (يورو) <span class="text-red-500">*</span></label>
                   <input 
                     type="number" 
                     :id="`item-price-${index}`" 
@@ -108,6 +109,7 @@
                     required
                     placeholder="0.00"
                     @input="calculateItemTotal(index)"
+                    @blur="item.price = parseEnglishNumber(item.price)"
                   />
                 </div>
                 
@@ -169,6 +171,7 @@
                   max="100"
                   step="0.1"
                   @input="calculateOrderTotal"
+                  @blur="order.taxRate = parseEnglishNumber(order.taxRate)"
                 />
               </div>
               
@@ -229,10 +232,10 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { supabase } from '@/services/supabase'
-import { formatCurrency } from '@/utils/formatters'
+import { supabase } from '../services/supabase.js'
+import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers } from '../utils/formatters.js'
 
 export default {
   name: 'CreateOrderView',
@@ -264,14 +267,19 @@ export default {
     // حساب إجمالي المنتج
     const calculateItemTotal = (index) => {
       const item = order.value.items[index]
-      item.total = (item.quantity || 0) * (item.price || 0)
+      // تحويل الأرقام إلى إنجليزية قبل الحساب
+      const quantity = parseEnglishNumber(item.quantity)
+      const price = parseEnglishNumber(item.price)
+      item.quantity = quantity
+      item.price = price
+      item.total = quantity * price
       calculateOrderTotal()
     }
     
     // حساب إجمالي الطلب
     const calculateOrderTotal = () => {
-      const subtotal = order.value.items.reduce((sum, item) => sum + (item.total || 0), 0)
-      const taxRate = (order.value.taxRate || 0) / 100 // تحويل النسبة المئوية إلى عدد عشري
+      const subtotal = order.value.items.reduce((sum, item) => sum + (parseEnglishNumber(item.total) || 0), 0)
+      const taxRate = parseEnglishNumber(order.value.taxRate) / 100 // تحويل النسبة المئوية إلى عدد عشري
       const tax = subtotal * taxRate
       const total = subtotal + tax
       
@@ -357,17 +365,15 @@ export default {
           return
         }
         
-        // إعداد بيانات الطلب للحفظ
+        // إعداد بيانات الطلب للحفظ - استخدام الحقول الموجودة فقط في قاعدة البيانات
         const orderData = {
           customer_name: order.value.customer_name.trim(),
           customer_phone: order.value.customer_phone.trim(),
           customer_address: order.value.customer_address.trim(),
-          // حفظ بيانات المنتج الأول فقط في الحقول الأساسية للتوافق مع النظام القديم
           product_description: order.value.items[0]?.name?.trim() || '',
-          quantity: Number(order.value.items[0]?.quantity || 1),
           unit_price: Number(order.value.items[0]?.price || 0),
           subtotal: Number(order.value.subtotal),
-          tax_rate: Number(order.value.taxRate), // نسبة الضريبة القابلة للتعديل
+          tax_rate: Number(order.value.taxRate),
           tax_amount: Number(order.value.tax),
           total: Number(order.value.total),
           notes: order.value.notes ? order.value.notes.trim() : '',
@@ -405,7 +411,9 @@ export default {
       addItem,
       removeItem,
       submitOrder,
-      formatCurrency
+      formatCurrency,
+      parseEnglishNumber,
+      convertToEnglishNumbers
     }
   }
 }

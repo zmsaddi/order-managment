@@ -216,7 +216,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass } from '@/utils/formatters'
+import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass, parseEnglishNumber, convertToEnglishNumbers } from '@/utils/formatters'
 
 export default {
   name: 'OrderDetailsView',
@@ -458,7 +458,9 @@ export default {
       deleteOrder,
       deleting,
       formatCurrency,
-      formatDate
+      formatDate,
+      parseEnglishNumber,
+      convertToEnglishNumbers
     }
   }
 }

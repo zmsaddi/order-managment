@@ -3,6 +3,39 @@
  */
 
 /**
+ * تحويل الأرقام العربية إلى إنجليزية
+ * @param {string} str - النص المحتوي على أرقام عربية
+ * @returns {string} - النص مع الأرقام الإنجليزية
+ */
+export const convertToEnglishNumbers = (str) => {
+  if (!str) return str;
+  
+  const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  
+  let result = str.toString();
+  for (let i = 0; i < arabicNumbers.length; i++) {
+    result = result.replace(new RegExp(arabicNumbers[i], 'g'), englishNumbers[i]);
+  }
+  
+  return result;
+};
+
+/**
+ * تحويل قيمة رقمية وضمان استخدام الأرقام الإنجليزية
+ * @param {string|number} value - القيمة المراد تحويلها
+ * @returns {number} - القيمة الرقمية بالأرقام الإنجليزية
+ */
+export const parseEnglishNumber = (value) => {
+  if (value === null || value === undefined || value === '') return 0;
+  
+  const englishValue = convertToEnglishNumbers(value.toString());
+  const parsed = parseFloat(englishValue);
+  
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+/**
  * تنسيق المبلغ كعملة يورو
  * @param {number} amount - المبلغ المراد تنسيقه
  * @returns {string} - المبلغ منسقاً كعملة يورو
