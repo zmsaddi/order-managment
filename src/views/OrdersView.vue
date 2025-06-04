@@ -1,458 +1,505 @@
 <template>
   <div>
-    <!-- عنوان الصفحة وزر الإضافة -->
+    <!-- عنوان الصفحة -->
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">إدارة الطلبات</h1>
-      <router-link to="/orders/create" class="btn btn-primary flex items-center">
+      <h1 class="text-2xl font-bold text-gray-800">تعديل الطلب</h1>
+      <router-link to="/orders" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 flex items-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+          <path
+            fill-rule="evenodd"
+            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+            clip-rule="evenodd"
+          />
         </svg>
-        إضافة طلب جديد
+        العودة إلى قائمة الطلبات
       </router-link>
     </div>
-    
-    <!-- فلاتر البحث -->
-    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label for="search" class="form-label">بحث</label>
-          <div class="relative">
-            <input 
-              type="text" 
-              id="search" 
-              v-model="searchQuery" 
-              placeholder="اسم العميل، رقم الطلب..." 
-              class="form-input pr-8"
-            />
-            <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-              </svg>
+
+    <div v-if="loading" class="text-center py-8">
+      <p>جاري تحميل بيانات الطلب…</p>
+    </div>
+
+    <div v-else class="bg-white rounded-lg shadow-sm p-6">
+      <form @submit.prevent="updateOrder">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- بيانات العميل -->
+          <div class="col-span-1 md:col-span-2">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">
+              بيانات العميل
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label for="customer-name" class="form-label">اسم العميل <span class="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  id="customer-name"
+                  v-model="order.customer_name"
+                  class="form-input"
+                  required
+                />
+              </div>
+              <div>
+                <label for="customer-phone" class="form-label">رقم هاتف العميل <span class="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  id="customer-phone"
+                  v-model="order.customer_phone"
+                  placeholder="+34 600 123 456"
+                  pattern="^\+?[0-9\s()\-]{8,20}$"
+                  class="form-input"
+                  required
+                />
+              </div>
+              <div>
+                <label for="customer-address" class="form-label">عنوان العميل <span class="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  id="customer-address"
+                  v-model="order.customer_address"
+                  class="form-input"
+                  required
+                />
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div>
-          <label for="status-filter" class="form-label">الحالة</label>
-          <select id="status-filter" v-model="statusFilter" class="form-input">
-            <option value="">جميع الحالات</option>
-            <option value="new">جديد</option>
-            <option value="completed_pending_delivery">مكتمل بانتظار التسليم</option>
-            <option value="delivered">تم التسليم</option>
-            <option value="cancelled">ملغى</option>
-          </select>
-        </div>
-        
-        <div>
-          <label for="date-from" class="form-label">من تاريخ</label>
-          <input 
-            type="date" 
-            id="date-from" 
-            v-model="dateFrom" 
-            class="form-input"
-          />
-        </div>
-        
-        <div>
-          <label for="date-to" class="form-label">إلى تاريخ</label>
-          <input 
-            type="date" 
-            id="date-to" 
-            v-model="dateTo" 
-            class="form-input"
-          />
-        </div>
-      </div>
-      
-      <div class="flex justify-end mt-4">
-        <button @click="resetFilters" class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 ml-2">
-          إعادة تعيين
-        </button>
-        <button @click="fetchOrders" class="btn btn-primary">
-          تطبيق الفلتر
-        </button>
-      </div>
-    </div>
-    
-    <!-- جدول الطلبات -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-      <div v-if="loading" class="text-center py-8">
-        <p>جاري تحميل البيانات...</p>
-      </div>
-      
-      <div v-else-if="filteredOrders.length === 0" class="text-center py-8">
-        <p v-if="searchQuery || statusFilter || dateFrom || dateTo">لا توجد نتائج مطابقة للبحث</p>
-        <p v-else>لا توجد طلبات</p>
-      </div>
-      
-      <div v-else class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-gray-50">
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('id')">
-                رقم الطلب
-                <span v-if="sortField === 'id'" class="mr-1">
-                  {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                </span>
-              </th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('customer_name')">
-                العميل
-                <span v-if="sortField === 'customer_name'" class="mr-1">
-                  {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                </span>
-              </th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('total')">
-                المبلغ
-                <span v-if="sortField === 'total'" class="mr-1">
-                  {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                </span>
-              </th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('status')">
-                الحالة
-                <span v-if="sortField === 'status'" class="mr-1">
-                  {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                </span>
-              </th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('created_at')">
-                التاريخ
-                <span v-if="sortField === 'created_at'" class="mr-1">
-                  {{ sortDirection === 'asc' ? '▲' : '▼' }}
-                </span>
-              </th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-for="order in filteredOrders" :key="order.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm text-gray-900">#{{ order.id }}</td>
-              <td class="px-4 py-3 text-sm text-gray-900">{{ order.customer_name }}</td>
-              <td class="px-4 py-3 text-sm text-gray-900">{{ formatCurrency(order.total) }}</td>
-              <td class="px-4 py-3 text-sm">
-                <span :class="getOrderStatusClass(order.status)" class="px-2 py-1 text-xs rounded-full">
-                  {{ getOrderStatusText(order.status) }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-900">{{ formatDate(order.created_at) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-900">
-                <div class="flex space-x-2 space-x-reverse">
-                  <router-link 
-                    :to="`/orders/${order.id}`" 
-                    class="text-sky-600 hover:text-sky-800"
-                    title="عرض التفاصيل"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                    </svg>
-                  </router-link>
-                  
-                  <button 
-                    @click="shareOnWhatsApp(order)" 
-                    class="text-green-600 hover:text-green-800"
-                    title="مشاركة عبر واتساب"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                    </svg>
-                  </button>
-                  
-                  <button 
-                    @click="generateInvoice(order)" 
-                    class="text-purple-600 hover:text-purple-800"
-                    title="إنشاء فاتورة"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                  
-                  <button 
-                    v-if="canDeleteOrder(order)" 
-                    @click="confirmDeleteOrder(order)" 
-                    class="text-red-600 hover:text-red-800"
-                    title="حذف"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    
-    <!-- نافذة تأكيد الحذف -->
-    <div v-if="showDeleteModal" class="fixed inset-0 z-30 overflow-y-auto">
-      <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 transition-opacity" @click="closeDeleteModal">
-          <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
-        
-        <div class="inline-block align-bottom bg-white rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="sm:flex sm:items-start">
-              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div class="mt-3 text-center sm:mt-0 sm:mr-4 sm:text-right">
-                <h3 class="text-lg font-medium text-gray-900">تأكيد الحذف</h3>
-                <div class="mt-2">
-                  <p class="text-sm text-gray-500">
-                    هل أنت متأكد من رغبتك في حذف الطلب رقم "{{ orderToDelete?.id }}"؟
-                    <br />
-                    لا يمكن التراجع عن هذا الإجراء.
-                  </p>
-                </div>
-              </div>
-            </div>
+
+          <!-- تفاصيل المنتج -->
+          <div class="col-span-1 md:col-span-2">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">
+              تفاصيل المنتج
+            </h2>
             
-            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-              <button 
-                type="button" 
-                class="btn btn-danger w-full sm:w-auto sm:mr-3" 
-                @click="deleteOrder"
-                :disabled="deleting"
+            <!-- رأس جدول عناوين الأعمدة -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2 font-medium text-gray-700">
+              <div class="md:col-span-2 text-center">اسم المنتج</div>
+              <div class="text-center">الكمية</div>
+              <div class="text-center">السعر لكل وحدة (€)</div>
+              <div class="text-center">الوصف</div>
+              <div class="text-center">إجراء</div>
+            </div>
+
+            <!-- صفوف إدخال المنتجات -->
+            <div
+              v-for="(item, index) in order.items"
+              :key="index"
+              class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 items-center"
+            >
+              <!-- اسم المنتج -->
+              <input
+                type="text"
+                v-model="item.name"
+                placeholder="مثال: قلم"
+                class="form-input md:col-span-2"
+                required
+              />
+
+              <!-- الكمية -->
+              <input
+                type="number"
+                v-model.number="item.quantity"
+                @blur="() => calculateItemSubtotal(index)"
+                placeholder="1"
+                class="form-input text-center"
+                min="1"
+                required
+              />
+
+              <!-- السعر لكل وحدة -->
+              <input
+                type="number"
+                v-model.number="item.price"
+                @blur="() => calculateItemSubtotal(index)"
+                placeholder="0.00"
+                class="form-input text-center"
+                min="0"
+                step="0.01"
+                required
+              />
+
+              <!-- الوصف -->
+              <input
+                type="text"
+                v-model="item.description"
+                placeholder="وصف اختياري"
+                class="form-input"
+              />
+
+              <!-- زر الإزالة -->
+              <button
+                type="button"
+                @click="removeItem(index)"
+                class="text-red-600 hover:text-red-800"
               >
-                <span v-if="deleting">جاري الحذف...</span>
-                <span v-else>حذف</span>
-              </button>
-              <button 
-                type="button" 
-                class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 mt-3 w-full sm:mt-0 sm:w-auto" 
-                @click="closeDeleteModal"
-              >
-                إلغاء
+                إزالة
               </button>
             </div>
+
+            <!-- زر إضافة عنصر جديد -->
+            <button
+              type="button"
+              @click="addItem"
+              class="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700"
+            >
+              إضافة عنصر جديد
+            </button>
+          </div>
+
+          <!-- ملخص الأسعار -->
+          <div class="col-span-1 md:col-span-2">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">
+              ملخص الأسعار
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="subtotal" class="form-label">المجموع الفرعي (الطلب)</label>
+                <input
+                  type="text"
+                  id="subtotal"
+                  :value="formatCurrency(order.subtotal || 0)"
+                  class="form-input bg-gray-100 font-bold"
+                  readonly
+                />
+              </div>
+              <div>
+                <label for="taxRate" class="form-label">نسبة الضريبة (%)</label>
+                <input
+                  type="number"
+                  v-model.number="order.tax_rate"
+                  @blur="handleTaxRateBlur"
+                  placeholder="مثال: 10"
+                  class="form-input text-center"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <label for="taxAmount" class="form-label">مبلغ الضريبة</label>
+                <input
+                  type="text"
+                  id="taxAmount"
+                  :value="formatCurrency(order.tax_amount || 0)"
+                  class="form-input bg-gray-100"
+                  readonly
+                />
+              </div>
+              <div>
+                <label for="total" class="form-label">الإجمالي النهائي</label>
+                <input
+                  type="text"
+                  id="total"
+                  :value="formatCurrency(order.total || 0)"
+                  class="form-input bg-gray-100 font-bold"
+                  readonly
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- ملاحظات -->
+          <div class="col-span-1 md:col-span-2">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 bg-sky-50 p-2 rounded-md text-center">
+              ملاحظات
+            </h2>
+            <textarea
+              v-model="order.notes"
+              class="form-input w-full border rounded p-2"
+              rows="4"
+              placeholder="أضف أي ملاحظات إضافية حول الطلب"
+            ></textarea>
           </div>
         </div>
-      </div>
+
+        <!-- زر حفظ التعديلات -->
+        <button
+          type="submit"
+          class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          :disabled="submitting"
+        >
+          <span v-if="submitting">جاري الحفظ…</span>
+          <span v-else>حفظ التغييرات</span>
+        </button>
+      </form>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass, convertToEnglishNumbers, shareOrderOnWhatsApp } from '@/utils/formatters'
-import { deleteOrderById, generateOrderInvoice, canEditOrder, canDeleteOrder } from '@/utils/orderUtils'
+import { formatCurrency, parseEnglishNumber, convertToEnglishNumbers } from '@/utils/formatters'
+
+// دالة لحساب مجاميع الطلب
+function calculateItemSubtotal(quantity, price) {
+  return Math.round((quantity * price) * 100) / 100
+}
+
+function calculateOrderTotals(items, taxRate) {
+  let orderSubtotal = 0
+  items.forEach(it => {
+    orderSubtotal += it.subtotal || 0
+  })
+  orderSubtotal = Math.round(orderSubtotal * 100) / 100
+  const taxAmt = Math.round((orderSubtotal * (taxRate / 100)) * 100) / 100
+  const grandTotal = Math.round((orderSubtotal + taxAmt) * 100) / 100
+  return { subtotal: orderSubtotal, taxAmount: taxAmt, total: grandTotal }
+}
 
 export default {
-  name: 'OrdersView',
+  name: 'EditOrderView',
   setup() {
+    const route = useRoute()
     const router = useRouter()
+    const orderId = Number(route.params.id)
+
     const loading = ref(true)
-    const orders = ref([])
-    const searchQuery = ref('')
-    const statusFilter = ref('')
-    const dateFrom = ref('')
-    const dateTo = ref('')
-    const sortField = ref('created_at')
-    const sortDirection = ref('desc')
-    
-    // الحصول على بيانات المستخدم الحالي من التخزين المحلي
-    const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
-    
-    // متغيرات نافذة الحذف
-    const showDeleteModal = ref(false)
-    const orderToDelete = ref(null)
-    const deleting = ref(false)
-    
-    // التحقق من صلاحيات المستخدم
-    const isAdmin = computed(() => {
-      return ['admin', 'sales_manager'].includes(user.value.role)
+    const submitting = ref(false)
+
+    // هيكلة بيانات الطلب مع الحقول اللازمة
+    const order = ref({
+      id: orderId,
+      customer_name: '',
+      customer_phone: '',
+      customer_address: '',
+      product_description: '',
+      items: [
+        {
+          id: null,            // سنملؤه لاحقاً من order_products إذا وُجد
+          name: '',
+          description: '',
+          notes: '',
+          quantity: 1,
+          price: 0,
+          subtotal: 0
+        }
+      ],
+      subtotal: 0,
+      tax_rate: 0,
+      tax_amount: 0,
+      total: 0,
+      notes: '',
+      status: ''
     })
-    
-    // تصفية الطلبات حسب البحث والفلاتر
-    const filteredOrders = computed(() => {
-      let result = orders.value
-      
-      // تصفية حسب البحث
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
-        result = result.filter(order => 
-          order.customer_name.toLowerCase().includes(query) || 
-          order.id.toString().includes(query)
-        )
-      }
-      
-      // تصفية حسب الحالة
-      if (statusFilter.value) {
-        result = result.filter(order => order.status === statusFilter.value)
-      }
-      
-      // تصفية حسب التاريخ (من)
-      if (dateFrom.value) {
-        const fromDate = new Date(dateFrom.value)
-        result = result.filter(order => new Date(order.created_at) >= fromDate)
-      }
-      
-      // تصفية حسب التاريخ (إلى)
-      if (dateTo.value) {
-        const toDate = new Date(dateTo.value)
-        toDate.setHours(23, 59, 59, 999) // نهاية اليوم
-        result = result.filter(order => new Date(order.created_at) <= toDate)
-      }
-      
-      // ترتيب النتائج
-      result.sort((a, b) => {
-        let aValue = a[sortField.value]
-        let bValue = b[sortField.value]
-        
-        // تحويل التواريخ
-        if (sortField.value === 'created_at') {
-          aValue = new Date(aValue)
-          bValue = new Date(bValue)
-        }
-        
-        // تحويل الأرقام
-        if (sortField.value === 'total' || sortField.value === 'id') {
-          aValue = parseFloat(aValue) || 0
-          bValue = parseFloat(bValue) || 0
-        }
-        
-        if (sortDirection.value === 'asc') {
-          return aValue > bValue ? 1 : -1
-        } else {
-          return aValue < bValue ? 1 : -1
-        }
-      })
-      
-      return result
-    })
-    
-    // جلب الطلبات
-    const fetchOrders = async () => {
+
+    // جلب بيانات الطلب ومنتجاته عند التحميل
+    const fetchOrder = async () => {
       try {
         loading.value = true
-        const { data, error } = await supabase
+
+        // جلب بيانات الطلب من جدول orders
+        const { data: ordData, error: orderErr } = await supabase
           .from('orders')
           .select('*')
-          .order('created_at', { ascending: false })
-        
-        if (error) throw error
-        
-        orders.value = data || []
-      } catch (error) {
-        console.error('خطأ في جلب الطلبات:', error)
-        orders.value = []
+          .eq('id', orderId)
+          .single()
+        if (orderErr) throw orderErr
+
+        // جلب منتجات الطلب من order_products
+        const { data: prodData, error: prodErr } = await supabase
+          .from('order_products')
+          .select('*')
+          .eq('order_id', orderId)
+        if (prodErr) throw prodErr
+
+        // ملء بيانات الطلب
+        order.value.customer_name = ordData.customer_name
+        order.value.customer_phone = ordData.customer_phone
+        order.value.customer_address = ordData.customer_address
+        order.value.product_description = ordData.product_description
+        order.value.subtotal = ordData.subtotal
+        order.value.tax_rate = ordData.tax_rate
+        order.value.tax_amount = ordData.tax_amount
+        order.value.total = ordData.total
+        order.value.notes = ordData.notes || ''
+        order.value.status = ordData.status
+
+        // إذا كان هناك منتجات فليتم ملؤها، وإلا احتفظ برقم واحد فارغ
+        if (prodData && prodData.length > 0) {
+          order.value.items = prodData.map(item => ({
+            id: item.id,
+            name: item.name,
+            description: item.description || '',
+            notes: item.notes || '',
+            quantity: Number(item.quantity),
+            price: Number(item.unit_price),
+            subtotal: Number(item.subtotal)
+          }))
+        } else {
+          order.value.items = [
+            {
+              id: null,
+              name: '',
+              description: '',
+              notes: '',
+              quantity: 1,
+              price: 0,
+              subtotal: 0
+            }
+          ]
+        }
+      } catch (err) {
+        console.error('خطأ في جلب بيانات الطلب:', err)
+        alert('فشل جلب بيانات الطلب.')
+        router.push('/orders')
       } finally {
         loading.value = false
       }
     }
-    
-    // تغيير حقل الفرز
-    const sortBy = (field) => {
-      if (sortField.value === field) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-      } else {
-        sortField.value = field
-        sortDirection.value = 'asc'
+
+    // دالة لحساب مجاميع عنصر واحد
+    const calculateItemSubtotal = (index) => {
+      const item = order.value.items[index]
+      if (!item) return
+      const qty = Math.max(1, parseEnglishNumber(item.quantity) || 1)
+      const pr = parseEnglishNumber(item.price) || 0
+      item.quantity = qty
+      item.subtotal = calculateItemSubtotal(qty, pr)
+      calculateOrderTotal()
+    }
+
+    // دالة لحساب مجاميع الطلب الكاملة
+    const calculateOrderTotal = () => {
+      const { subtotal, taxAmount, total } = calculateOrderTotals(
+        order.value.items,
+        order.value.tax_rate
+      )
+      order.value.subtotal = subtotal
+      order.value.tax_amount = taxAmount
+      order.value.total = total
+    }
+
+    // معالجة فقدان التركيز من حقل نسبة الضريبة
+    const handleTaxRateBlur = () => {
+      let tr = parseEnglishNumber(order.value.tax_rate)
+      if (isNaN(tr) || tr < 0) tr = 0
+      if (tr > 100) tr = 100
+      order.value.tax_rate = Math.round(tr * 10) / 10
+      calculateOrderTotal()
+    }
+
+    // إضافة صف جديد
+    const addItem = () => {
+      order.value.items.push({
+        id: null,
+        name: '',
+        description: '',
+        notes: '',
+        quantity: 1,
+        price: 0,
+        subtotal: 0
+      })
+      calculateOrderTotal()
+    }
+
+    // إزالة صف موجود
+    const removeItem = (index) => {
+      order.value.items.splice(index, 1)
+      calculateOrderTotal()
+    }
+
+    // تحديث الطلب
+    const updateOrder = async () => {
+      try {
+        submitting.value = true
+
+        // 1) أعد حساب كل صنف
+        order.value.items.forEach((_, idx) => calculateItemSubtotal(idx))
+
+        // 2) تحقق أن الإجمالي>0
+        if (!order.value.total || order.value.total <= 0) {
+          alert('يجب أن يكون إجمالي الطلب أكبر من صفر')
+          submitting.value = false
+          return
+        }
+
+        // 3) حدّد وصف المنتج (اسم المنتج الأول)
+        const first = order.value.items[0]
+        const prodDesc = first && first.name ? first.name : 'منتج غير محدد'
+
+        // 4) جهّز كائن بيانات orders
+        const updatedOrderData = {
+          customer_name: order.value.customer_name.trim(),
+          customer_phone: order.value.customer_phone.trim(),
+          customer_address: order.value.customer_address.trim(),
+          product_description: prodDesc,
+          subtotal: order.value.subtotal,
+          tax_rate: order.value.tax_rate,
+          tax_amount: order.value.tax_amount,
+          total: order.value.total,
+          notes: order.value.notes.trim(),
+          status: order.value.status
+        }
+
+        // 5) حدّث صف الـ orders بناءً على الـ id
+        const { error: orderErr } = await supabase
+          .from('orders')
+          .update(updatedOrderData)
+          .eq('id', orderId)
+        if (orderErr) throw orderErr
+
+        // 6) احذف كل منتجات هذا الطلب من order_products
+        const { error: delErr } = await supabase
+          .from('order_products')
+          .delete()
+          .eq('order_id', orderId)
+        if (delErr) throw delErr
+
+        // 7) أعد إدخال كل الأصناف المحدثة
+        for (const item of order.value.items) {
+          const productData = {
+            order_id: orderId,
+            name: item.name,
+            description: item.description || '',
+            notes: item.notes || '',
+            quantity: item.quantity,
+            unit_price: item.price,
+            subtotal: item.subtotal
+          }
+          const { error: prodErr } = await supabase
+            .from('order_products')
+            .insert([productData])
+          if (prodErr) throw prodErr
+        }
+
+        // 8) العودة إلى صفحة الطلبات
+        router.push('/orders')
+      } catch (err) {
+        console.error('خطأ في تحديث الطلب:', err)
+        alert('حدث خطأ أثناء حفظ التعديلات.')
+      } finally {
+        submitting.value = false
       }
     }
-    
-    // إعادة تعيين الفلاتر
-    const resetFilters = () => {
-      searchQuery.value = ''
-      statusFilter.value = ''
-      dateFrom.value = ''
-      dateTo.value = ''
-    }
-    
-    // مشاركة عبر واتساب - استخدام الدالة الموحدة
-    const shareOnWhatsApp = (order) => {
-      shareOrderOnWhatsApp(order)
-    }
-    
-    // إنشاء فاتورة - استخدام الدالة الموحدة
-    const generateInvoice = async (order) => {
-      await generateOrderInvoice(order)
-    }
-    
-    // التحقق من إمكانية حذف الطلب - استخدام الدالة الموحدة
-    const canDeleteOrderCheck = (order) => {
-      return canDeleteOrder(order, user.value)
-    }
-    
-    // تأكيد حذف الطلب
-    const confirmDeleteOrder = (order) => {
-      orderToDelete.value = order
-      showDeleteModal.value = true
-    }
-    
-    // إغلاق نافذة الحذف
-    const closeDeleteModal = () => {
-      showDeleteModal.value = false
-      orderToDelete.value = null
-    }
-    
-    // حذف الطلب - استخدام الدالة الموحدة
-    const deleteOrder = async () => {
-      if (!orderToDelete.value) return
-      
-      deleting.value = true
-      
-      const success = await deleteOrderById(
-        orderToDelete.value.id,
-        () => {
-          // عند النجاح - إزالة الطلب من القائمة
-          orders.value = orders.value.filter(order => order.id !== orderToDelete.value.id)
-          closeDeleteModal()
-        },
-        (error) => {
-          // عند الخطأ - إظهار رسالة خطأ
-          console.error('خطأ في حذف الطلب:', error)
-          alert('حدث خطأ أثناء حذف الطلب')
-        }
-      )
-      
-      deleting.value = false
-    }
-    
-    // تهيئة الصفحة
+
     onMounted(() => {
-      fetchOrders()
+      fetchOrder()
     })
-    
+
+    // راقب تغيير حقل items لإعادة حساب الطلب
+    watch(
+      () => order.value.items.map(it => ({ q: it.quantity, p: it.price })),
+      () => calculateOrderTotal(),
+      { deep: true }
+    )
+
     return {
+      order,
       loading,
-      orders,
-      filteredOrders,
-      searchQuery,
-      statusFilter,
-      dateFrom,
-      dateTo,
-      sortField,
-      sortDirection,
-      showDeleteModal,
-      orderToDelete,
-      deleting,
-      isAdmin,
-      fetchOrders,
-      sortBy,
-      resetFilters,
-      shareOnWhatsApp,
-      generateInvoice,
-      canDeleteOrder: canDeleteOrderCheck,
-      confirmDeleteOrder,
-      closeDeleteModal,
-      deleteOrder,
+      submitting,
+      addItem,
+      removeItem,
+      calculateItemSubtotal,
+      handleTaxRateBlur,
+      updateOrder,
       formatCurrency,
-      formatDate,
-      getOrderStatusText,
-      getOrderStatusClass
+      parseEnglishNumber,
+      convertToEnglishNumbers
     }
   }
 }
 </script>
 
 <style scoped>
-/* تنسيقات إضافية إذا لزم الأمر */
+/* التنسيقات الإضافية إن وجدت */
 </style>
-
