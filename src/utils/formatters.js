@@ -177,33 +177,48 @@ export const getUserStatusClass = (status) => {
 export const shareOrderOnWhatsApp = (order) => {
   if (!order) return;
   
-  // استخراج معلومات المنتجات من product_description (JSON)
+  // استخراج معلومات المنتجات من جدول order_products أو product_description
   let productsText = '';
-  try {
-    if (order.product_description) {
-      // محاولة تحليل JSON
-      const products = JSON.parse(order.product_description);
-      if (Array.isArray(products) && products.length > 0) {
-        productsText = products.map((product, index) => 
-          `${index + 1}. ${product.name}\nالكمية: ${convertToEnglishNumbers(product.quantity.toString())}\nالسعر: €${convertToEnglishNumbers(product.price.toString())}`
-        ).join('\n\n');
-      } else {
-        // إذا لم يكن JSON، استخدم النص كما هو
-        productsText = `1. ${order.product_description}`;
+  
+  if (order.products && order.products.length > 0) {
+    // استخدام المنتجات من الجدول المنفصل (النظام الجديد)
+    productsText = order.products.map((product, index) => {
+      let productText = `${index + 1}. ${product.name}`;
+      if (product.description) {
+        productText += `\nالوصف: ${product.description}`;
       }
+      productText += `\nالكمية: ${convertToEnglishNumbers(product.quantity.toString())}`;
+      productText += `\nسعر الوحدة: ${formatCurrency(product.unit_price)}`;
+      productText += `\nالمجموع: ${formatCurrency(product.subtotal)}`;
+      if (product.notes) {
+        productText += `\nملاحظات: ${product.notes}`;
+      }
+      return productText;
+    }).join('\n\n');
+  } else {
+    // استخدام product_description للطلبات القديمة
+    try {
+      if (order.product_description) {
+        // محاولة تحليل JSON
+        const products = JSON.parse(order.product_description);
+        if (Array.isArray(products) && products.length > 0) {
+          productsText = products.map((product, index) => 
+            `${index + 1}. ${product.name}\nالكمية: ${convertToEnglishNumbers(product.quantity.toString())}\nالسعر: €${convertToEnglishNumbers(product.price.toString())}`
+          ).join('\n\n');
+        } else {
+          productsText = `1. ${order.product_description}`;
+        }
+      }
+    } catch (error) {
+      // إذا فشل تحليل JSON، استخدم النص كما هو
+      productsText = `1. ${order.product_description || 'منتج غير محدد'}`;
     }
-  } catch (error) {
-    // إذا فشل تحليل JSON، استخدم النص كما هو
-    productsText = `1. ${order.product_description || 'منتج غير محدد'}`;
   }
   
-  // استخراج الكمية الإجمالية من الملاحظات
-  let totalQuantityText = '';
-  if (order.notes && order.notes.includes('الكمية الإجمالية:')) {
-    const match = order.notes.match(/الكمية الإجمالية:\s*(\d+)/);
-    if (match && match[1]) {
-      totalQuantityText = `\nالكمية الإجمالية: ${convertToEnglishNumbers(match[1])} قطعة`;
-    }
+  // إضافة ملاحظات الطلب إذا وجدت
+  let notesText = '';
+  if (order.notes && order.notes.trim()) {
+    notesText = `\n📝 ملاحظات الطلب:\n${order.notes.trim()}`;
   }
   
   // رسالة واضحة مع كل معلومة في سطر منفصل - موحدة لجميع المنصات
@@ -215,7 +230,7 @@ export const shareOrderOnWhatsApp = (order) => {
 العنوان: ${order.customer_address || 'غير متوفر'}
 
 📦 المنتجات المطلوبة:
-${productsText}${totalQuantityText}
+${productsText}
 
 💰 تفاصيل الفاتورة:
 المجموع الفرعي: ${formatCurrency(order.subtotal)}
@@ -223,7 +238,7 @@ ${productsText}${totalQuantityText}
 مبلغ الضريبة: ${formatCurrency(order.tax_amount)}
 الإجمالي النهائي: ${formatCurrency(order.total)}
 
-${order.status ? `📋 حالة الطلب: ${getOrderStatusText(order.status)}` : ''}
+${order.status ? `📋 حالة الطلب: ${getOrderStatusText(order.status)}` : ''}${notesText}
 
 ---
 تم إنشاء هذا الطلب من نظام إدارة الطلبات`;

@@ -388,6 +388,7 @@ export default {
       loading.value = true
       
       try {
+        // جلب بيانات الطلب الأساسية
         const { data, error } = await supabase
           .from('orders')
           .select('*')
@@ -396,20 +397,45 @@ export default {
         
         if (error) throw error
         
+        // جلب منتجات الطلب من الجدول المنفصل
+        const { data: productsData, error: productsError } = await supabase
+          .from('order_products')
+          .select('*')
+          .eq('order_id', route.params.id)
+        
+        let items = []
+        
+        if (!productsError && productsData && productsData.length > 0) {
+          // استخدام المنتجات من الجدول المنفصل (النظام الجديد)
+          items = productsData.map(product => ({
+            name: product.name || '',
+            description: product.description || '',
+            notes: product.notes || '',
+            quantity: product.quantity || 1,
+            price: product.unit_price || 0,
+            total: product.subtotal || 0
+          }))
+        } else {
+          // استخدام البيانات القديمة للتوافق مع الطلبات السابقة
+          items = [
+            {
+              name: data.product_description || '',
+              description: '',
+              notes: '',
+              quantity: data.quantity || 1,
+              price: data.unit_price || (data.subtotal / (data.quantity || 1)),
+              total: data.subtotal || 0
+            }
+          ]
+        }
+        
         // تحويل بيانات الطلب إلى تنسيق النموذج
         order.value = {
           id: data.id,
           customer_name: data.customer_name || '',
           customer_phone: data.customer_phone || '',
           customer_address: data.customer_address || '',
-          items: [
-            {
-              name: data.product_description || '',
-              quantity: data.quantity || 1,
-              price: data.unit_price || (data.subtotal / (data.quantity || 1)),
-              total: data.subtotal || 0
-            }
-          ],
+          items: items,
           subtotal: data.subtotal || 0,
           taxRate: data.tax_rate || 15,
           tax: data.tax_amount || 0,
@@ -487,24 +513,13 @@ export default {
           return
         }
         
-        // إعداد بيانات الطلب للتحديث - حفظ جميع المنتجات منفصلة
-        // حساب الكمية الإجمالية وسعر الوحدة المتوسط للعرض فقط
-        const totalQuantity = order.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
-        const averageUnitPrice = totalQuantity > 0 ? (order.value.subtotal / totalQuantity) : 0
+        // إعداد بيانات الطلب للتحديث - استخدام النظام الجديد للمنتجات المنفصلة
+        // حفظ المنتج الأول فقط في product_description للتوافق مع النظام القديم
+        const firstProduct = order.value.items[0]
+        const productDescription = firstProduct ? firstProduct.name : 'منتج غير محدد'
         
-        // حفظ جميع المنتجات منفصلة في product_description كـ JSON
-        const productsData = order.value.items.map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price
-        }))
-        const productDescription = JSON.stringify(productsData)
-        
-        // إضافة معلومات إضافية في الملاحظات
-        const additionalInfo = `الكمية الإجمالية: ${totalQuantity}\nسعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
-        const finalNotes = order.value.notes ? 
-          `${order.value.notes.trim()}\n\n${additionalInfo}` : 
-          additionalInfo
+        // إزالة الملاحظات التلقائية - استخدام ملاحظات المستخدم فقط
+        const finalNotes = order.value.notes ? order.value.notes.trim() : ''
         
         const orderData = {
           customer_name: order.value.customer_name.trim(),
@@ -526,6 +541,38 @@ export default {
           .select()
         
         if (error) throw error
+        
+        // حذف المنتجات القديمة من الجدول المنفصل
+        const { error: deleteError } = await supabase
+          .from('order_products')
+          .delete()
+          .eq('order_id', order.value.id)
+        
+        if (deleteError) {
+          console.warn('تحذير: لم يتم العثور على منتجات قديمة للحذف:', deleteError)
+        }
+        
+        // حفظ كل منتج منفصل في جدول order_products
+        for (const item of order.value.items) {
+          const productData = {
+            order_id: order.value.id,
+            name: item.name || '',
+            description: item.description || '',
+            notes: item.notes || '',
+            quantity: Number(item.quantity),
+            unit_price: Number(item.price),
+            subtotal: Number(item.quantity * item.price)
+          }
+          
+          const { error: productError } = await supabase
+            .from('order_products')
+            .insert([productData])
+          
+          if (productError) {
+            console.error('خطأ في حفظ المنتج:', productError)
+            throw productError
+          }
+        }
         
         alert('تم تحديث الطلب بنجاح')
         router.push(`/orders/${order.value.id}`)

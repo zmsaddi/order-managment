@@ -241,6 +241,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass, convertToEnglishNumbers, shareOrderOnWhatsApp } from '@/utils/formatters'
+import { deleteOrderById, generateOrderInvoice, canEditOrder, canDeleteOrder } from '@/utils/orderUtils'
 
 export default {
   name: 'OrdersView',
@@ -369,15 +370,14 @@ export default {
       shareOrderOnWhatsApp(order)
     }
     
-    // إنشاء فاتورة
-    const generateInvoice = (order) => {
-      // هنا يمكن إضافة منطق إنشاء الفاتورة
-      console.log('إنشاء فاتورة للطلب:', order.id)
+    // إنشاء فاتورة - استخدام الدالة الموحدة
+    const generateInvoice = async (order) => {
+      await generateOrderInvoice(order)
     }
     
-    // التحقق من إمكانية حذف الطلب
-    const canDeleteOrder = (order) => {
-      return isAdmin.value && order.status === 'new'
+    // التحقق من إمكانية حذف الطلب - استخدام الدالة الموحدة
+    const canDeleteOrderCheck = (order) => {
+      return canDeleteOrder(order, user.value)
     }
     
     // تأكيد حذف الطلب
@@ -392,29 +392,27 @@ export default {
       orderToDelete.value = null
     }
     
-    // حذف الطلب
+    // حذف الطلب - استخدام الدالة الموحدة
     const deleteOrder = async () => {
       if (!orderToDelete.value) return
       
-      try {
-        deleting.value = true
-        const { error } = await supabase
-          .from('orders')
-          .delete()
-          .eq('id', orderToDelete.value.id)
-        
-        if (error) throw error
-        
-        // إزالة الطلب من القائمة
-        orders.value = orders.value.filter(order => order.id !== orderToDelete.value.id)
-        
-        closeDeleteModal()
-      } catch (error) {
-        console.error('خطأ في حذف الطلب:', error)
-        alert('حدث خطأ أثناء حذف الطلب')
-      } finally {
-        deleting.value = false
-      }
+      deleting.value = true
+      
+      const success = await deleteOrderById(
+        orderToDelete.value.id,
+        () => {
+          // عند النجاح - إزالة الطلب من القائمة
+          orders.value = orders.value.filter(order => order.id !== orderToDelete.value.id)
+          closeDeleteModal()
+        },
+        (error) => {
+          // عند الخطأ - إظهار رسالة خطأ
+          console.error('خطأ في حذف الطلب:', error)
+          alert('حدث خطأ أثناء حذف الطلب')
+        }
+      )
+      
+      deleting.value = false
     }
     
     // تهيئة الصفحة
@@ -441,7 +439,7 @@ export default {
       resetFilters,
       shareOnWhatsApp,
       generateInvoice,
-      canDeleteOrder,
+      canDeleteOrder: canDeleteOrderCheck,
       confirmDeleteOrder,
       closeDeleteModal,
       deleteOrder,

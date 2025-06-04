@@ -239,6 +239,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { formatCurrency, formatDate, getOrderStatusText, getOrderStatusClass, convertToEnglishNumbers, shareOrderOnWhatsApp, parseEnglishNumber } from '@/utils/formatters'
+import { deleteOrderById, generateOrderInvoice, canEditOrder, canDeleteOrder, fetchOrderWithProducts } from '@/utils/orderUtils'
 
 export default {
   name: 'OrderDetailsView',
@@ -263,20 +264,13 @@ export default {
     })
     
     // التحقق من إمكانية تعديل الطلب
-    const canEditOrder = computed(() => {
-      if (!order.value) return false
-      
-      // المدراء يمكنهم تعديل أي طلب
-      if (isAdmin.value) return true
-      
-      // المندوب يمكنه تعديل طلباته فقط
-      return user.value.id === order.value.sales_rep_id
+    const canEditOrderComputed = computed(() => {
+      return canEditOrder(order.value, user.value)
     })
     
     // التحقق من إمكانية حذف الطلب
-    const canDeleteOrder = computed(() => {
-      // فقط المدراء يمكنهم حذف الطلبات
-      return isAdmin.value
+    const canDeleteOrderComputed = computed(() => {
+      return canDeleteOrder(order.value, user.value)
     })
     
     // التحقق من إمكانية تغيير حالة الطلب
@@ -343,44 +337,22 @@ export default {
           throw new Error('معرف الطلب غير صحيح')
         }
         
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', orderId)
-          .single()
+        // استخدام الدالة الموحدة لجلب بيانات الطلب مع المنتجات
+        const orderData = await fetchOrderWithProducts(orderId)
         
-        if (error) {
-          console.error('خطأ في الاستعلام:', error)
-          throw error
-        }
-        
-        if (!data) {
+        if (!orderData) {
           throw new Error('لم يتم العثور على الطلب')
         }
         
-        order.value = data
-        newStatus.value = data.status
-        
-        // جلب منتجات الطلب من الجدول المنفصل
-        const { data: productsData, error: productsError } = await supabase
-          .from('order_products')
-          .select('*')
-          .eq('order_id', orderId)
-        
-        if (!productsError && productsData && productsData.length > 0) {
-          // إضافة المنتجات إلى بيانات الطلب
-          order.value.products = productsData
-        } else {
-          // في حالة عدم وجود منتجات في الجدول المنفصل، استخدم البيانات القديمة
-          order.value.products = []
-        }
+        order.value = orderData
+        newStatus.value = orderData.status
         
         // جلب بيانات المندوب
-        if (data.sales_rep_id) {
+        if (orderData.sales_rep_id) {
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('name, email, phone')
-            .eq('id', data.sales_rep_id)
+            .eq('id', orderData.sales_rep_id)
             .single()
           
           if (!userError && userData) {
@@ -425,47 +397,9 @@ export default {
       shareOrderOnWhatsApp(order.value)
     }
     
-    // إنشاء فاتورة
+    // إنشاء فاتورة - استخدام الدالة الموحدة
     const generateInvoice = async () => {
-      if (!order.value) return
-      
-      try {
-        // جلب منتجات الطلب
-        const { data: productsData, error: productsError } = await supabase
-          .from('order_products')
-          .select('*')
-          .eq('order_id', order.value.id)
-        
-        if (productsError) throw productsError
-        
-        let products = [];
-        
-        if (productsData && productsData.length > 0) {
-          // استخدام المنتجات من الجدول الجديد
-          products = productsData;
-        } else {
-          // استخدام البيانات القديمة إذا لم تكن هناك منتجات في الجدول الجديد
-          products = [{
-            description: order.value.product_description,
-            notes: '',
-            quantity: order.value.quantity,
-            unit_price: order.value.unit_price,
-            subtotal: order.value.subtotal
-          }];
-        }
-        
-        // استيراد منشئ الفاتورة
-        const { generateInvoice } = await import('@/utils/invoiceGenerator');
-        
-        // إنشاء الفاتورة
-        const doc = generateInvoice(order.value, products, salesRep.value);
-        
-        // حفظ الفاتورة
-        doc.save(`فاتورة_${order.value.id}.pdf`);
-      } catch (error) {
-        console.error('خطأ في إنشاء الفاتورة:', error);
-        alert('حدث خطأ أثناء إنشاء الفاتورة. يرجى المحاولة مرة أخرى.');
-      }
+      await generateOrderInvoice(order.value)
     }
     
     // فتح نافذة تأكيد الحذف
@@ -478,29 +412,25 @@ export default {
       showDeleteModal.value = false
     }
     
-    // حذف الطلب
+    // حذف الطلب - استخدام الدالة الموحدة
     const deleteOrder = async () => {
-      if (!order.value) return
-      
       deleting.value = true
       
-      try {
-        const { error } = await supabase
-          .from('orders')
-          .delete()
-          .eq('id', order.value.id)
-        
-        if (error) throw error
-        
-        // إغلاق النافذة والعودة إلى صفحة الطلبات
-        closeDeleteModal()
-        router.push('/orders')
-      } catch (error) {
-        console.error('خطأ في حذف الطلب:', error)
-        alert('حدث خطأ أثناء حذف الطلب')
-      } finally {
-        deleting.value = false
-      }
+      const success = await deleteOrderById(
+        order.value.id,
+        () => {
+          // عند النجاح - الانتقال إلى قائمة الطلبات
+          router.push('/orders')
+        },
+        (error) => {
+          // عند الخطأ - إظهار رسالة خطأ مخصصة
+          console.error('خطأ في حذف الطلب:', error)
+          alert('حدث خطأ أثناء حذف الطلب')
+        }
+      )
+      
+      deleting.value = false
+      showDeleteModal.value = false
     }
     
     // تهيئة الصفحة
@@ -514,8 +444,8 @@ export default {
       order,
       salesRep,
       newStatus,
-      canEditOrder,
-      canDeleteOrder,
+      canEditOrder: canEditOrderComputed,
+      canDeleteOrder: canDeleteOrderComputed,
       canChangeStatus,
       calculateUnitPrice,
       getStatusText,

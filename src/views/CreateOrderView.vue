@@ -430,15 +430,8 @@ export default {
         const firstProduct = order.value.items[0]
         const productDescription = firstProduct ? firstProduct.name : 'منتج غير محدد'
         
-        // حساب الكمية الإجمالية وسعر الوحدة المتوسط للملاحظات
-        const totalQuantity = order.value.items.reduce((sum, item) => sum + (item.quantity || 0), 0)
-        const averageUnitPrice = totalQuantity > 0 ? (order.value.subtotal / totalQuantity) : 0
-        
-        // إضافة معلومات إضافية في الملاحظات
-        const additionalInfo = `الكمية الإجمالية: ${totalQuantity}\nسعر الوحدة المتوسط: €${Math.round(averageUnitPrice * 100) / 100}`
-        const finalNotes = order.value.notes ? 
-          `${order.value.notes.trim()}\n\n${additionalInfo}` : 
-          additionalInfo
+        // إزالة الملاحظات التلقائية - استخدام ملاحظات المستخدم فقط
+        const finalNotes = order.value.notes ? order.value.notes.trim() : ''
         
         const orderData = {
           customer_name: order.value.customer_name.trim(),
