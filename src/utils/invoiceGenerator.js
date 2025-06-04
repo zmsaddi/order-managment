@@ -2,19 +2,6 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate, getOrderStatusText } from './formatters';
 
-// Import the Arabic font as base64
-import rawAmiri from '@/assets/fonts/Amiri-Regular.ttf?base64';
-
-// Strip off the data:…;base64, prefix before giving it to jsPDF
-const base64Amiri = rawAmiri.split(',')[1]; 
-
-// Register the font once, before creating any new jsPDF instance
-jsPDF.API.events.push(['addFonts', function() {
-  // pass in pure Base64 (no data:… prefix) to addFileToVFS
-  this.addFileToVFS('Amiri-Regular.ttf', base64Amiri);
-  this.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-}]);
-
 /**
  * توليد فاتورة PDF للطلب
  * @param {Object} order - بيانات الطلب
@@ -23,24 +10,24 @@ jsPDF.API.events.push(['addFonts', function() {
  * @returns {jsPDF} - ملف PDF
  */
 export const generateInvoice = (order, products, salesRep) => {
-  // إنشاء مستند PDF (الخط مسجل بالفعل في الأعلى)
+  // إنشاء مستند PDF
   const doc = new jsPDF();
   
-  // إعداد الخط العربي
-  doc.setFont('Amiri');
+  // إعداد الخط
+  doc.setFont('helvetica');
   
   // إضافة عنوان الفاتورة
   doc.setFontSize(22);
-  doc.text('فاتورة', doc.internal.pageSize.width / 2, 20, { align: 'center' });
+  doc.text('Invoice / فاتورة', doc.internal.pageSize.width / 2, 20, { align: 'center' });
   
   // إضافة رقم الطلب والتاريخ
   doc.setFontSize(12);
-  doc.text(`رقم الطلب: ${order.id}`, doc.internal.pageSize.width - 20, 30, { align: 'right' });
-  doc.text(`التاريخ: ${formatDate(order.created_at)}`, doc.internal.pageSize.width - 20, 37, { align: 'right' });
+  doc.text(`Order ID: ${order.id}`, doc.internal.pageSize.width - 20, 30, { align: 'right' });
+  doc.text(`Date: ${formatDate(order.created_at)}`, doc.internal.pageSize.width - 20, 37, { align: 'right' });
   
   // إضافة حالة الطلب
   const statusText = getOrderStatusText(order.status);
-  doc.text(`الحالة: ${statusText}`, doc.internal.pageSize.width - 20, 44, { align: 'right' });
+  doc.text(`Status: ${statusText}`, doc.internal.pageSize.width - 20, 44, { align: 'right' });
   
   // إضافة بيانات العميل
   doc.setFontSize(14);
@@ -79,7 +66,7 @@ export const generateInvoice = (order, products, salesRep) => {
     startY: 95,
     theme: 'grid',
     styles: {
-      font: 'Amiri',
+      font: 'helvetica',
       halign: 'center',
       valign: 'middle',
       fontSize: 10,
@@ -254,7 +241,7 @@ export const generateReportPDF = async (reportData, summary, filters) => {
     });
     
     // إعداد الخط العربي
-    doc.setFont('Amiri');
+    doc.setFont('helvetica');
     
     // إضافة عنوان التقرير
     doc.setFontSize(20);
@@ -321,7 +308,7 @@ export const generateReportPDF = async (reportData, summary, filters) => {
       startY: yPosition,
       theme: 'grid',
       styles: {
-        font: 'Amiri',
+        font: 'helvetica',
         fontSize: 8,
         cellPadding: 2,
         halign: 'center',
