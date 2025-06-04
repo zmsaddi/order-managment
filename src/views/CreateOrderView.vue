@@ -94,7 +94,6 @@
                     @change="calculateItemTotal(index)"
                   />
                 </div>
-                </div>
                 
                 <div>
                   <label :for="`item-price-${index}`" class="form-label">السعر (يورو) <span class="text-red-500">*</span></label>
