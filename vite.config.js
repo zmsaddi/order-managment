@@ -14,6 +14,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  // Ensure that Vite handles .ttf assets properly
+  assetsInclude: ['**/*.ttf'],
   build: {
     chunkSizeWarningLimit: 2000,
     rollupOptions: {

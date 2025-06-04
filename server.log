@@ -1,0 +1,17 @@
+nohup: ignoring input
+
+> order-management-system@1.0.0 dev
+> vite
+
+
+  VITE v4.5.14  ready in 384 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://169.254.0.21:5173/
+2:26:54 PM [vite] vite.config.js changed, restarting server...
+2:26:54 PM [vite] server restarted.
+2:27:14 PM [vite] page reload src/utils/invoiceGenerator.js
+2:27:23 PM [vite] page reload src/utils/invoiceGenerator.js
+2:27:48 PM [vite] page reload src/utils/invoiceGenerator.js
+2:28:20 PM [vite] page reload src/utils/invoiceGenerator.js
+2:28:26 PM [vite] page reload src/utils/invoiceGenerator.js

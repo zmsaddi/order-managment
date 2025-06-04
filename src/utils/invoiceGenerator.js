@@ -2,6 +2,9 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate, getOrderStatusText } from './formatters';
 
+// Import the Arabic font as base64
+import AmiriTTF from '@/assets/fonts/Amiri-Regular.ttf?base64';
+
 /**
  * توليد فاتورة PDF للطلب
  * @param {Object} order - بيانات الطلب
@@ -10,12 +13,17 @@ import { formatCurrency, formatDate, getOrderStatusText } from './formatters';
  * @returns {jsPDF} - ملف PDF
  */
 export const generateInvoice = (order, products, salesRep) => {
+  // Embed the Amiri font into jsPDF's VFS before creating any PDF
+  jsPDF.API.events.push(['addFonts', function() {
+    this.addFileToVFS('Amiri-Regular.ttf', AmiriTTF);
+    this.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+  }]);
+
   // إنشاء مستند PDF
   const doc = new jsPDF();
   
   // إعداد الخط العربي
-  doc.setFont('Helvetica');
-  doc.setLanguage('ar');
+  doc.setFont('Amiri');
   
   // إضافة عنوان الفاتورة
   doc.setFontSize(22);
@@ -67,7 +75,7 @@ export const generateInvoice = (order, products, salesRep) => {
     startY: 95,
     theme: 'grid',
     styles: {
-      font: 'Helvetica',
+      font: 'Amiri',
       halign: 'center',
       valign: 'middle',
       fontSize: 10,
@@ -234,6 +242,12 @@ export const createPdfFromElement = async (elementId, options = {}) => {
  */
 export const generateReportPDF = async (reportData, summary, filters) => {
   try {
+    // Embed the same Amiri font into jsPDF's VFS
+    jsPDF.API.events.push(['addFonts', function() {
+      this.addFileToVFS('Amiri-Regular.ttf', AmiriTTF);
+      this.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+    }]);
+
     // إنشاء مستند PDF
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -242,7 +256,7 @@ export const generateReportPDF = async (reportData, summary, filters) => {
     });
     
     // إعداد الخط العربي
-    doc.setFont('Helvetica');
+    doc.setFont('Amiri');
     
     // إضافة عنوان التقرير
     doc.setFontSize(20);
@@ -309,7 +323,7 @@ export const generateReportPDF = async (reportData, summary, filters) => {
       startY: yPosition,
       theme: 'grid',
       styles: {
-        font: 'Helvetica',
+        font: 'Amiri',
         fontSize: 8,
         cellPadding: 2,
         halign: 'center',
